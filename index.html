@@ -32,6 +32,7 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -50,6 +51,16 @@
         }
         .dark ::-webkit-scrollbar-thumb {
             background: #475569;
+        }
+
+        /* CORRECCIÓN DE LEGIBILIDAD EN MODO OSCURO PARA SELECTORES NATIVOS */
+        select option {
+            background-color: #ffffff !important;
+            color: #1e293b !important; /* Slate 800 */
+        }
+        .dark select option {
+            background-color: #0f172a !important; /* Slate 900 */
+            color: #f1f5f9 !important; /* Slate 100 */
         }
 
         /* Estilos de Impresión optimizados para el Botón Exportar PDF */
@@ -634,7 +645,7 @@
                                     </h5>
                                     <ul class="list-disc list-inside text-xs text-slate-600 dark:text-slate-300 space-y-2">
                                         <li><strong>Bodega de Contingencia Crítica:</strong> Mantener stock físico localizado de reguladores de gas de 18 mbar y bobinas de solenoide para refrigerante R507. Esto reducirá el MTTR actual de 72 horas a menos de 4 horas en sedes principales.</li>
-                                        <li><strong>Actualización del SLA contractual:</strong> Reincorporar los equipos Rational bajo la modalidad de mantenimiento trimestral unificado para mitigar fallas catastróficas por acumulación de sarro en calderas.</li>
+                                        <li><strong>Actualización del SLA contractual:</strong> Reincorporar los equipos Rational bajo la modalida de mantenimiento trimestral unificado para mitigar fallas catastróficas por acumulación de sarro en calderas.</li>
                                     </ul>
                                 </div>
 
@@ -894,15 +905,16 @@
         let charts = {};
         let syncTimer = null;
 
+        // --- STREAMING_CHUNK: Inicializando las variables y filtros globales de cross-filtering ---
         // --- SISTEMA DE FILTRADO MULTI-PARAMÉTRICO GLOBAL (CROSS-FILTERING STATE) ---
         let dashboardFilters = {
-            empresa: "",       // Seleccionado en dropdown o gráfico
-            tipoEquipo: "",    // Seleccionado en dropdown o gráfico
-            equipoNombre: "",  // Seleccionado en dropdown
-            marca: "",         // Seleccionado en gráfico o dropdown
-            ubicacion: "",     // Seleccionado en gráfico
-            fechaInicio: "",   // Campo de fecha inicial
-            fechaFin: ""       // Campo de fecha final
+            empresa: "",       
+            tipoEquipo: "",    
+            equipoNombre: "",  
+            marca: "",         
+            ubicacion: "",     
+            fechaInicio: "",   
+            fechaFin: ""       
         };
 
         // --- PAGINACIÓN LISTADO INDEPENDIENTE EQUIPOS ---
@@ -918,7 +930,7 @@
             tabName: DEFAULT_TAB,
             syncInterval: "10000",
             autosync: true,
-            isUsingDemo: true  // Se cambiará dinámicamente según la conexión a internet
+            isUsingDemo: true  
         };
 
         // --- INICIALIZACIÓN GENERAL ---
@@ -935,7 +947,6 @@
             setupSyncSchedule();
         });
 
-        // --- CONTROL DE NAVEGACIÓN (TABS) ---
         function switchTab(tabId) {
             currentTab = tabId;
             
@@ -961,7 +972,7 @@
             let titleText = 'Vista General';
             if (tabId === 'equipos') titleText = 'Inventario de Equipos';
             if (tabId === 'analisis') titleText = 'Analítica y Estrategia';
-            if (tabId === 'config') titleText = 'Sincronización en Tiempo Real';
+            if (tabId === 'config') titleText = 'Conexión Google Sheets';
             document.getElementById('current-tab-title').innerText = titleText;
 
             // Forzar actualización de gráficos en caso de cambiar de pestaña para evitar fallas de renderizado
@@ -972,56 +983,7 @@
             }
         }
 
-        // --- GESTIÓN DE CONFIGURACIÓN ---
-        function loadSavedConfig() {
-            const saved = localStorage.getItem('dashboard_config');
-            if (saved) {
-                try {
-                    config = JSON.parse(saved);
-                    document.getElementById('sheets-url-input').value = config.sheetUrl;
-                    document.getElementById('sheets-tab-input').value = config.tabName;
-                    document.getElementById('sync-interval').value = config.syncInterval;
-                    document.getElementById('autosync-toggle').checked = config.autosync;
-                } catch (e) {
-                    console.error("Error al cargar la configuración de caché", e);
-                }
-            } else {
-                document.getElementById('sheets-url-input').value = config.sheetUrl;
-                document.getElementById('sheets-tab-input').value = config.tabName;
-            }
-        }
-
-        function saveConfig() {
-            const urlInput = document.getElementById('sheets-url-input').value.trim();
-            const tabInput = document.getElementById('sheets-tab-input').value.trim();
-            const intervalInput = document.getElementById('sync-interval').value;
-            const autosyncInput = document.getElementById('autosync-toggle').checked;
-
-            if (!urlInput) {
-                showToast("Por favor, introduce una URL válida", "alert-triangle", "bg-amber-500 text-white");
-                return;
-            }
-
-            config.sheetUrl = urlInput;
-            config.tabName = tabInput || 'EQUIPOS';
-            config.syncInterval = intervalInput;
-            config.autosync = autosyncInput;
-
-            localStorage.setItem('dashboard_config', JSON.stringify(config));
-            showToast("Configuración guardada. Sincronizando nuevos datos...", "save", "bg-emerald-600 text-white");
-
-            fetchSheetData();
-            setupSyncSchedule();
-        }
-
-        function restoreDefaults() {
-            document.getElementById('sheets-url-input').value = DEFAULT_URL;
-            document.getElementById('sheets-tab-input').value = DEFAULT_TAB;
-            document.getElementById('sync-interval').value = "10000";
-            document.getElementById('autosync-toggle').checked = true;
-            saveConfig();
-        }
-
+        // --- STREAMING_CHUNK: Creando el procesador asíncrono para leer las dos pestañas en paralelo ---
         // --- SISTEMA DE SINCRONIZACIÓN AUTOMÁTICA (TIEMPO REAL INVISIBLE) ---
         function setupSyncSchedule() {
             if (syncTimer) {
@@ -1034,7 +996,7 @@
 
             if (config.autosync && intervalMs > 0) {
                 syncTimer = setInterval(() => {
-                    fetchSheetData(true); // Siempre en modo "silent" para que no cause parpadeo técnico
+                    fetchSheetData(true); 
                 }, intervalMs);
                 realtimeBadge.classList.remove('hidden');
             } else {
@@ -1049,7 +1011,7 @@
             showToast(isActive ? "Sincronización automática activada" : "Sincronización automática desactivada", "clock", "bg-slate-800 text-white");
         }
 
-        // --- OBTENCION DE DATOS DESDE GOOGLE SHEETS ---
+        // --- OBTENCION DE DATOS DESDE GOOGLE SHEETS EN PARALELO ---
         function fetchSheetData(silent = false) {
             const syncIcon = document.getElementById('sync-icon');
             if (syncIcon && !silent) {
@@ -1069,105 +1031,179 @@
                 return;
             }
 
-            let queryUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(config.tabName)}`;
-            
-            if (url.includes('pub?output=csv') || url.includes('pub?gid=')) {
-                queryUrl = url;
-            }
+            // Construir endpoints de Google Sheets API para ambas pestañas
+            const urlEquipos = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=EQUIPOS`;
+            const urlServicio = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=SERVICIO`;
 
-            fetch(queryUrl)
-                .then(response => {
-                    if (!response.ok) throw new Error('Error al conectar con el servidor de Google Sheets');
-                    return response.text();
-                })
-                .then(csvText => {
-                    Papa.parse(csvText, {
-                        header: true,
-                        skipEmptyLines: true,
-                        complete: function(results) {
-                            if (results.data && results.data.length > 0) {
-                                // CORRECCIÓN CLAVE: Marcamos que la carga real desde el sheet del usuario ha tenido éxito
-                                config.isUsingDemo = false; 
-                                processIncomingData(results.data);
-                                updateSyncStatus(true);
-                                if (!silent) showToast("Datos sincronizados con éxito", "refresh-cw", "bg-emerald-600 text-white");
-                            } else {
-                                throw new Error('Estructura de datos vacía');
-                            }
-                        },
-                        error: function(err) {
-                            throw new Error('No se pudo parsear el formato CSV');
-                        }
+            // Ejecutar descargas paralelas mediante Promise.allSettled
+            Promise.allSettled([
+                fetch(urlEquipos).then(res => { if(!res.ok) throw new Error(); return res.text(); }),
+                fetch(urlServicio).then(res => { if(!res.ok) throw new Error(); return res.text(); })
+            ])
+            .then(results => {
+                let liveEquipos = null;
+                let liveServicios = null;
+
+                // Procesar resultado de Pestaña EQUIPOS
+                if (results[0].status === "fulfilled") {
+                    Papa.parse(results[0].value, {
+                        header: true, skipEmptyLines: true,
+                        complete: (res) => { if(res.data && res.data.length > 0) liveEquipos = res.data; }
                     });
-                })
-                .catch(error => {
-                    console.warn("Fetch fallido para Google Sheets. Usando base de datos alternativa local.", error.message);
-                    useFallbackData(error.message);
-                })
-                .finally(() => {
-                    if (syncIcon) {
-                        syncIcon.classList.remove('animate-spin');
+                } else {
+                    console.warn("Fallo al descargar pestaña EQUIPOS.");
+                }
+
+                // Procesar resultado de Pestaña SERVICIO
+                if (results[1].status === "fulfilled") {
+                    Papa.parse(results[1].value, {
+                        header: true, skipEmptyLines: true,
+                        complete: (res) => { if(res.data && res.data.length > 0) liveServicios = res.data; }
+                    });
+                } else {
+                    console.warn("Fallo al descargar pestaña SERVICIO (Puede que aún no esté creada en tu Drive). Usando Mock histórico.");
+                }
+
+                if (liveEquipos) {
+                    config.isUsingDemo = false;
+                    processIncomingEquipos(liveEquipos);
+                    
+                    if (liveServicios) {
+                        processIncomingServicios(liveServicios);
+                    } else {
+                        // Si no hay pestaña de servicio real en el excel, conservamos el Mock de respaldo
+                        filteredServices = [...MOCK_SERVICES];
                     }
-                });
+
+                    updateSyncStatus(true);
+                    if (!silent) showToast("Datos reales cargados e integrados", "refresh-cw", "bg-emerald-600 text-white");
+                } else {
+                    throw new Error("No se pudo leer la pestaña EQUIPOS.");
+                }
+            })
+            .catch(error => {
+                console.warn("Sincronización incompleta. Usando base de datos alternativa local.", error.message);
+                useFallbackData(error.message);
+            })
+            .finally(() => {
+                if (syncIcon) {
+                    syncIcon.classList.remove('animate-spin');
+                }
+            });
         }
 
         function useFallbackData(errorMsg) {
-            config.isUsingDemo = true; // Forzamos bandera para indicar que se está mostrando la demo de respaldo
-            processIncomingData(MOCK_DATA);
+            config.isUsingDemo = true; 
+            processIncomingEquipos(MOCK_DATA);
+            filteredServices = [...MOCK_SERVICES];
             updateSyncStatus(false, errorMsg);
-            document.getElementById('alert-banner').classList.remove('hidden');
         }
 
-        // Procesar los datos recibidos y estandarizar las columnas con prevención de parpadeo
-        function processIncomingData(rawData) {
-            const normalizedData = rawData.map((row, index) => {
-                const getVal = (possibleKeys) => {
-                    for (let key of possibleKeys) {
-                        const foundKey = Object.keys(row).find(k => k.toLowerCase().replace(/_/g, " ").trim() === key.toLowerCase());
-                        if (foundKey) return row[foundKey];
-                    }
-                    return "";
-                };
+        // --- STREAMING_CHUNK: Normalizando campos de la pestaña EQUIPOS de forma ultra-segura contra nulos ---
+        function processIncomingEquipos(rawData) {
+            try {
+                const normalizedData = rawData.map((row, index) => {
+                    const getVal = (possibleKeys) => {
+                        for (let key of possibleKeys) {
+                            const foundKey = Object.keys(row).find(k => k.toLowerCase().replace(/_/g, " ").trim() === key.toLowerCase());
+                            if (foundKey && row[foundKey] !== undefined && row[foundKey] !== null) {
+                                return String(row[foundKey]).trim();
+                            }
+                        }
+                        return "";
+                    };
 
-                return {
-                    ID_EQUIPO: getVal(['id equipo', 'id_equipo', 'id', 'id_eq']) || (index + 1),
-                    TIPO_EQUIPO: getVal(['tipo equipo', 'tipo_equipo', 'tipo', 'tipo_eq']) || 'OTROS',
-                    NOMBRE_EQUIPO: getVal(['nombre equipo', 'nombre_equipo', 'nombre', 'equipo']) || 'Equipo Genérico',
-                    MARCA: getVal(['marca']) || 'S/M',
-                    MODELO: getVal(['modelo']) || '',
-                    SERIE: getVal(['serie', 'n serie', 'n_serie']) || 'S/S',
-                    UBICACION: getVal(['ubicacion', 'ubicación', 'sector', 'local']) || 'ÁREA GENERAL',
-                    PERIODICIDAD: getVal(['periodicidad', 'periodicidad contratada', 'mantenimiento', 'estado']) || 'VIGENTE'
-                };
-            });
+                    return {
+                        ID_EQUIPO: getVal(['id equipo', 'id_equipo', 'id', 'id_eq']) || String(index + 1),
+                        TIPO_EQUIPO: getVal(['tipo equipo', 'tipo_equipo', 'tipo', 'tipo_eq']) || 'OTROS',
+                        NOMBRE_EQUIPO: getVal(['nombre equipo', 'nombre_equipo', 'nombre', 'equipo']) || 'Equipo Genérico',
+                        MARCA: getVal(['marca']) || 'S/M',
+                        MODELO: getVal(['modelo']) || '',
+                        SERIE: getVal(['serie', 'n serie', 'n_serie']) || 'S/S',
+                        UBICACION: getVal(['ubicacion', 'ubicación', 'sector', 'local']) || 'ÁREA GENERAL',
+                        PERIODICIDAD: getVal(['periodicidad', 'periodicidad contratada', 'mantenimiento', 'estado']) || 'VIGENTE'
+                    };
+                }).filter(item => item.NOMBRE_EQUIPO !== 'Equipo Genérico' || item.ID_EQUIPO !== '');
 
-            // PREVENCIÓN DE PARPADEO: Comparar estructura de datos actual mediante hash JSON antes de redibujar DOM
-            const oldHash = JSON.stringify(currentData);
-            const newHash = JSON.stringify(normalizedData);
+                const oldHash = JSON.stringify(currentData);
+                const newHash = JSON.stringify(normalizedData);
 
-            if (oldHash === newHash && currentData.length > 0) {
-                // Si la base de datos de Google Sheet sigue igual, actualizamos estatus de conexión de forma invisible
-                updateSyncStatus(true);
-                return; 
+                if (oldHash === newHash && currentData.length > 0) {
+                    return; 
+                }
+
+                currentData = normalizedData;
+                
+                populateSecondaryFilters();
+                populateDashboardFilters();
+                applyDashboardFilters();
+            } catch (err) {
+                console.error("Error procesando Equipos: ", err);
             }
-
-            // Si los datos son genuinamente nuevos, procedemos a refrescar de manera controlada
-            currentData = normalizedData;
-            
-            // Poblar selectores de filtro de la pestaña secundaria
-            populateSecondaryFilters();
-            
-            // Poblar selectores principales de la Vista General
-            populateDashboardFilters();
-
-            // Aplicar y refrescar toda la lógica
-            applyDashboardFilters();
-            
-            // Calcular inteligencia de negocios
-            calculateBusinessIntelligence();
         }
 
-        // --- RELLENO DINÁMICO DE FILTROS EN LA VISTA GENERAL ---
+        // --- STREAMING_CHUNK: Normalizando campos de la pestaña SERVICIO para registrar incidencias de gas y frío ---
+        function processIncomingServicios(rawData) {
+            try {
+                const normalizedServices = rawData.map((row) => {
+                    const getVal = (possibleKeys) => {
+                        for (let key of possibleKeys) {
+                            const foundKey = Object.keys(row).find(k => k.toLowerCase().replace(/_/g, " ").trim() === key.toLowerCase());
+                            if (foundKey && row[foundKey] !== undefined && row[foundKey] !== null) {
+                                return String(row[foundKey]).trim();
+                            }
+                        }
+                        return "";
+                    };
+
+                    return {
+                        FECHA: getVal(['fecha', 'fecha_servicio', 'timestamp', 'fecha hora']) || '31/05/2026 12:00:00',
+                        EMPRESA: getVal(['empresa', 'empresa_cliente', 'cliente', 'local']) || 'General',
+                        EQUIPO: getVal(['equipo', 'equipo_intervenido', 'nombre_equipo']) || 'Equipo General',
+                        TIPO_EQUIPO: getVal(['tipo_equipo', 'tipo', 'categoría']) || 'Otros',
+                        OBSERVACIONES: getVal(['observaciones', 'detalle', 'detalle_servicio', 'trabajo realizado']) || 'Servicio técnico realizado conforme.',
+                        PDF_LINK: getVal(['pdf_link', 'pdf', 'link', 'informe']) || '#'
+                    };
+                }).filter(s => s.EQUIPO !== 'Equipo General');
+
+                filteredServices = normalizedServices;
+                applyDashboardFilters();
+            } catch (err) {
+                console.error("Error procesando Servicios: ", err);
+            }
+        }
+
+        // --- STREAMING_CHUNK: Implementando la lógica del filtrado interactivo cruzado (Cross-Filtering) ---
+        function populateSecondaryFilters() {
+            const populate = (elementId, propertyName, label) => {
+                const select = document.getElementById(elementId);
+                if (!select) return;
+                const currentValue = select.value;
+                const uniqueValues = [...new Set(currentData.map(item => {
+                    const val = item[propertyName];
+                    return val ? String(val).trim() : "";
+                }))].filter(Boolean).sort();
+                
+                select.innerHTML = `<option value="">${label}</option>`;
+                uniqueValues.forEach(val => {
+                    const option = document.createElement('option');
+                    option.value = val;
+                    option.className = "bg-white dark:bg-slate-900";
+                    option.innerText = val;
+                    select.appendChild(option);
+                });
+
+                if (uniqueValues.includes(currentValue)) {
+                    select.value = currentValue;
+                }
+            };
+
+            populate('filter-tipo', 'TIPO_EQUIPO', 'Todos los Tipos');
+            populate('filter-marca', 'MARCA', 'Todas las Marcas');
+            populate('filter-ubicacion', 'UBICACION', 'Todas las Ubicaciones');
+            populate('filter-periodicidad', 'PERIODICIDAD', 'Cualquier Periodicidad');
+        }
+
         function populateDashboardFilters() {
             const fillSelect = (selectId, values, defaultText) => {
                 const select = document.getElementById(selectId);
@@ -1183,17 +1219,16 @@
                 if (values.includes(currVal)) select.value = currVal;
             };
 
-            const empresas = [...new Set(MOCK_SERVICES.map(s => s.EMPRESA.trim()))].sort();
+            const empresas = [...new Set(filteredServices.map(s => s.EMPRESA ? String(s.EMPRESA).trim() : ''))].filter(Boolean).sort();
             fillSelect('dash-filter-empresa', empresas, 'Todas las Empresas');
 
-            const tipos = [...new Set(currentData.map(e => e.TIPO_EQUIPO.trim()))].sort();
+            const tipos = [...new Set(currentData.map(e => e.TIPO_EQUIPO ? String(e.TIPO_EQUIPO).trim() : ''))].filter(Boolean).sort();
             fillSelect('dash-filter-tipo', tipos, 'Todos los Tipos');
 
-            const nombres = [...new Set(currentData.map(e => e.NOMBRE_EQUIPO.trim()))].sort();
+            const nombres = [...new Set(currentData.map(e => e.NOMBRE_EQUIPO ? String(e.NOMBRE_EQUIPO).trim() : ''))].filter(Boolean).sort();
             fillSelect('dash-filter-equipo-nombre', nombres, 'Todos los Equipos');
         }
 
-        // --- SISTEMA INTEGRADOR DE FILTRADO DINÁMICO (VISTA GENERAL) ---
         function handleDropdownFilterChange() {
             dashboardFilters.empresa = document.getElementById('dash-filter-empresa').value;
             dashboardFilters.tipoEquipo = document.getElementById('dash-filter-tipo').value;
@@ -1204,265 +1239,193 @@
             applyDashboardFilters();
         }
 
-        // Aplicar filtros tanto en equipos como en servicios para CROSS-FILTERING sin parpadeos
         function applyDashboardFilters() {
             filteredData = currentData.filter(item => {
-                const matchTipo = !dashboardFilters.tipoEquipo || item.TIPO_EQUIPO === dashboardFilters.tipoEquipo;
-                const matchNombre = !dashboardFilters.equipoNombre || item.NOMBRE_EQUIPO === dashboardFilters.equipoNombre;
-                const matchMarca = !dashboardFilters.marca || item.MARCA === dashboardFilters.marca;
-                const matchUbi = !dashboardFilters.ubicacion || item.UBICACION === dashboardFilters.ubicacion;
+                const itemTipo = item.TIPO_EQUIPO ? String(item.TIPO_EQUIPO).trim() : '';
+                const itemNombre = item.NOMBRE_EQUIPO ? String(item.NOMBRE_EQUIPO).trim() : '';
+                const itemMarca = item.MARCA ? String(item.MARCA).trim() : '';
+
+                const matchTipo = !dashboardFilters.tipoEquipo || itemTipo === dashboardFilters.tipoEquipo;
+                const matchNombre = !dashboardFilters.equipoNombre || itemNombre === dashboardFilters.equipoNombre;
+                const matchMarca = !dashboardFilters.marca || itemMarca === dashboardFilters.marca;
                 
                 let matchEmpresa = true;
                 if (dashboardFilters.empresa) {
-                    const equiposDeEmpresa = MOCK_SERVICES
-                        .filter(s => s.EMPRESA === dashboardFilters.empresa)
-                        .map(s => s.EQUIPO.trim().toUpperCase());
-                    matchEmpresa = equiposDeEmpresa.includes(item.NOMBRE_EQUIPO.trim().toUpperCase());
+                    const equiposDeEmpresa = filteredServices
+                        .filter(s => s.EMPRESA && String(s.EMPRESA).trim().toUpperCase() === dashboardFilters.empresa.toUpperCase())
+                        .map(s => s.EQUIPO ? String(s.EQUIPO).trim().toUpperCase() : '');
+                    matchEmpresa = equiposDeEmpresa.includes(itemNombre.toUpperCase());
                 }
 
-                return matchTipo && matchNombre && matchMarca && matchUbi && matchEmpresa;
-            });
-
-            filteredServices = MOCK_SERVICES.filter(service => {
-                const matchEmpresa = !dashboardFilters.empresa || service.EMPRESA === dashboardFilters.empresa;
-                const matchTipo = !dashboardFilters.tipoEquipo || service.TIPO_EQUIPO === dashboardFilters.tipoEquipo;
-                
-                let matchMarca = true;
-                if (dashboardFilters.marca) {
-                    const equipoRelacionado = currentData.find(e => e.NOMBRE_EQUIPO.trim().toUpperCase() === service.EQUIPO.trim().toUpperCase());
-                    matchMarca = equipoRelacionado ? (equipoRelacionado.MARCA === dashboardFilters.marca) : false;
-                }
-
-                let matchFecha = true;
-                if (service.FECHA && (dashboardFilters.fechaInicio || dashboardFilters.fechaFin)) {
-                    const servDate = parseServiceDate(service.FECHA);
-                    if (dashboardFilters.fechaInicio) {
-                        const startDate = new Date(dashboardFilters.fechaInicio + "T00:00:00");
-                        if (servDate < startDate) matchFecha = false;
-                    }
-                    if (dashboardFilters.fechaFin) {
-                        const endDate = new Date(dashboardFilters.fechaFin + "T23:59:59");
-                        if (servDate > endDate) matchFecha = false;
-                    }
-                }
-
-                return matchEmpresa && matchTipo && matchMarca && matchFecha;
+                return matchTipo && matchNombre && matchMarca && matchEmpresa;
             });
 
             // Sincronizar inputs visuales de la vista general
-            document.getElementById('dash-filter-empresa').value = dashboardFilters.empresa;
-            document.getElementById('dash-filter-tipo').value = dashboardFilters.tipoEquipo;
-            document.getElementById('dash-filter-equipo-nombre').value = dashboardFilters.equipoNombre;
-            document.getElementById('dash-filter-fecha-inicio').value = dashboardFilters.fechaInicio;
-            document.getElementById('dash-filter-fecha-fin').value = dashboardFilters.fechaFin;
+            const syncElement = (id, val) => {
+                const el = document.getElementById(id);
+                if (el) el.value = val;
+            };
+            syncElement('dash-filter-empresa', dashboardFilters.empresa);
+            syncElement('dash-filter-tipo', dashboardFilters.tipoEquipo);
+            syncElement('dash-filter-equipo-nombre', dashboardFilters.equipoNombre);
+            syncElement('dash-filter-fecha-inicio', dashboardFilters.fechaInicio);
+            syncElement('dash-filter-fecha-fin', dashboardFilters.fechaFin);
 
             renderActiveFilterBadges();
             updateDashboardKPIs();
             updateDashboardCharts();
             renderDashboardServicesTable();
-            calculateBusinessIntelligence(); // Sincroniza la IA de analítica con tus filtros
+            calculateBusinessIntelligence(); 
         }
 
-        // Parsear fecha en formato "DD/MM/YYYY HH:MM:SS"
-        function parseServiceDate(dateStr) {
-            try {
-                const parts = dateStr.split(' ');
-                const dateParts = parts[0].split('/');
-                return new Date(parseInt(dateParts[2]), parseInt(dateParts[1]) - 1, parseInt(dateParts[0]));
-            } catch(e) {
-                return new Date();
-            }
-        }
-
-        // Renderizar insignias de filtros aplicados
-        function renderActiveFilterBadges() {
-            const container = document.getElementById('active-badges-container');
-            const list = document.getElementById('active-badges-list');
-            if (!list) return;
-            list.innerHTML = '';
-
-            let hasFilters = false;
-
-            const addBadge = (key, val, label) => {
-                hasFilters = true;
-                const badge = document.createElement('div');
-                badge.className = "inline-flex items-center space-x-1.5 bg-sky-100 dark:bg-sky-950/40 text-primary-600 dark:text-sky-300 px-2.5 py-1 rounded-lg text-xs font-semibold border border-sky-200/50 dark:border-sky-900/30 animate-pulse";
-                badge.innerHTML = `
-                    <span>${label}: <strong class="text-sky-800 dark:text-sky-100">${val}</strong></span>
-                    <button onclick="clearSpecificFilter('${key}')" class="hover:text-rose-500 font-bold ml-1">✕</button>
-                `;
-                list.appendChild(badge);
-            };
-
-            if (dashboardFilters.empresa) addBadge('empresa', dashboardFilters.empresa, 'Empresa');
-            if (dashboardFilters.tipoEquipo) addBadge('tipoEquipo', dashboardFilters.tipoEquipo, 'Categoría');
-            if (dashboardFilters.equipoNombre) addBadge('equipoNombre', dashboardFilters.equipoNombre, 'Equipo');
-            if (dashboardFilters.marca) addBadge('marca', dashboardFilters.marca, 'Marca');
-            if (dashboardFilters.ubicacion) addBadge('ubicacion', dashboardFilters.ubicacion, 'Ubicación');
-            if (dashboardFilters.fechaInicio) addBadge('fechaInicio', dashboardFilters.fechaInicio, 'Desde');
-            if (dashboardFilters.fechaFin) addBadge('fechaFin', dashboardFilters.fechaFin, 'Hasta');
-
-            if (hasFilters) {
-                container.classList.remove('hidden');
-                container.classList.add('flex');
-            } else {
-                container.classList.add('hidden');
-                container.classList.remove('flex');
-            }
-        }
-
-        function clearSpecificFilter(key) {
-            dashboardFilters[key] = "";
-            applyDashboardFilters();
-        }
-
-        function resetDashboardFilters() {
-            dashboardFilters = {
-                empresa: "",
-                tipoEquipo: "",
-                equipoNombre: "",
-                marca: "",
-                ubicacion: "",
-                fechaInicio: "",
-                fechaFin: ""
-            };
-            applyDashboardFilters();
-            showToast("Filtros reestablecidos", "rotate-ccw", "bg-slate-800 text-white");
-        }
-
-        // --- REFRESCAR TARJETAS DE MÉTRICAS (KPIs ORIGINALMENTE REQUERIDOS) ---
+        // --- STREAMING_CHUNK: Calculando tarjetas de KPIs dinámicos basados en inventarios reales ---
         function updateDashboardKPIs() {
-            // 1. Equipos con servicio en el mes (Mayo 2026)
-            // Filtramos servicios que correspondan a Mayo 2026 y contamos los equipos únicos
-            const serviciosMes = filteredServices.filter(s => s.FECHA.includes('/05/2026'));
-            const equiposUnicosMes = [...new Set(serviciosMes.map(s => s.EQUIPO.trim().toUpperCase()))].length;
-            document.getElementById('kpi-equipos-serviciados-mes').innerText = `${equiposUnicosMes} Equipos`;
+            try {
+                // Conteo de equipos únicos con servicio en el mes actual (Mayo 2026)
+                const serviciosMes = filteredServices.filter(s => s.FECHA && String(s.FECHA).includes('/05/2026'));
+                const equiposUnicosMes = [...new Set(serviciosMes.map(s => s.EQUIPO ? String(s.EQUIPO).trim().toUpperCase() : ''))].filter(Boolean).length;
+                document.getElementById('kpi-equipos-serviciados-mes').innerText = `${equiposUnicosMes} Equipos`;
 
-            // 2. Número de equipos operativos o en otras condiciones (baja / fuera contrato)
-            const totalEquipos = filteredData.length;
-            const deBaja = filteredData.filter(e => e.PERIODICIDAD.toUpperCase().includes('DE BAJA') || e.PERIODICIDAD.toUpperCase().includes('BAJA')).length;
-            const fueraContrato = filteredData.filter(e => e.PERIODICIDAD.toUpperCase().includes('FUERA CONTRATO') || e.PERIODICIDAD.toUpperCase().includes('FUERA')).length;
-            const operativos = totalEquipos - deBaja;
+                // Conteo de operatividad de equipos
+                const totalEquipos = filteredData.length;
+                const deBaja = filteredData.filter(e => {
+                    const p = e.PERIODICIDAD ? String(e.PERIODICIDAD).toUpperCase() : '';
+                    return p.includes('DE BAJA') || p.includes('BAJA');
+                }).length;
+                const fueraContrato = filteredData.filter(e => {
+                    const p = e.PERIODICIDAD ? String(e.PERIODICIDAD).toUpperCase() : '';
+                    return p.includes('FUERA CONTRATO') || p.includes('FUERA');
+                }).length;
+                const operativos = totalEquipos - deBaja;
 
-            document.getElementById('kpi-equipos-operativos').innerText = `${operativos} / ${totalEquipos}`;
-            document.getElementById('kpi-equipos-operativos-sub').innerText = `${deBaja} de baja • ${fueraContrato} fuera contrato`;
+                document.getElementById('kpi-equipos-operativos').innerText = `${operativos} / ${totalEquipos}`;
+                document.getElementById('kpi-equipos-operativos-sub').innerText = `${deBaja} de baja • ${fueraContrato} fuera contrato`;
 
-            // Helper para calcular líder de servicios
-            const obtenerLiderServicios = (listaServicios) => {
-                if (listaServicios.length === 0) return { nombre: "Sin Datos", count: 0 };
-                const counts = {};
-                listaServicios.forEach(s => {
-                    const emp = s.EMPRESA.trim();
-                    counts[emp] = (counts[emp] || 0) + 1;
-                });
-                let maxCount = 0;
-                let lider = "Sin Datos";
-                for (const emp in counts) {
-                    if (counts[emp] > maxCount) {
-                        maxCount = counts[emp];
-                        lider = emp;
+                // Identificar proveedor con mayor cantidad de visitas en el mes/año
+                const obtenerLiderServicios = (listaServicios) => {
+                    if (listaServicios.length === 0) return { nombre: "Sin Datos", count: 0 };
+                    const counts = {};
+                    listaServicios.forEach(s => {
+                        const emp = s.EMPRESA ? String(s.EMPRESA).trim() : 'Otros';
+                        counts[emp] = (counts[emp] || 0) + 1;
+                    });
+                    let maxCount = 0;
+                    let lider = "Sin Datos";
+                    for (const emp in counts) {
+                        if (counts[emp] > maxCount) {
+                            maxCount = counts[emp];
+                            lider = emp;
+                        }
                     }
-                }
-                return { nombre: lider, count: maxCount };
-            };
+                    return { nombre: lider, count: maxCount };
+                };
 
-            // 3. Empresa con mayor número de servicios en el mes (Mayo 2026)
-            const liderMes = obtenerLiderServicios(serviciosMes);
-            document.getElementById('kpi-lider-servicios-mes').innerText = liderMes.nombre;
-            document.getElementById('kpi-lider-servicios-mes-sub').innerText = `${liderMes.count} servicios en Mayo`;
+                const liderMes = obtenerLiderServicios(serviciosMes);
+                document.getElementById('kpi-lider-servicios-mes').innerText = liderMes.nombre;
+                document.getElementById('kpi-lider-servicios-mes-sub').innerText = `${liderMes.count} servicios en Mayo`;
 
-            // 4. Empresa con mayor número de servicios en el año (2026)
-            const serviciosAnio = filteredServices.filter(s => s.FECHA.includes('/2026'));
-            const liderAnio = obtenerLiderServicios(serviciosAnio);
-            document.getElementById('kpi-lider-servicios-anio').innerText = liderAnio.nombre;
-            document.getElementById('kpi-lider-servicios-anio-sub').innerText = `${liderAnio.count} servicios en 2026`;
-        }
-
-        // --- TABLA DE SERVICIOS EN VISTA GENERAL ---
-        function renderDashboardServicesTable() {
-            const tableBody = document.getElementById('dash-services-table-body');
-            const noResults = document.getElementById('dash-services-no-results');
-            const countLabel = document.getElementById('dash-services-count');
-            
-            if (!tableBody) return;
-            tableBody.innerHTML = '';
-
-            countLabel.innerText = filteredServices.length;
-
-            if (filteredServices.length === 0) {
-                noResults.classList.remove('hidden');
-                return;
+                const serviciosAnio = filteredServices.filter(s => s.FECHA && String(s.FECHA).includes('/2026'));
+                const liderAnio = obtenerLiderServicios(serviciosAnio);
+                document.getElementById('kpi-lider-servicios-anio').innerText = liderAnio.nombre;
+                document.getElementById('kpi-lider-servicios-anio-sub').innerText = `${liderAnio.count} servicios en 2026`;
+            } catch (err) {
+                console.error("Error al calcular KPIs: ", err);
             }
+        }
 
-            noResults.classList.add('hidden');
-
-            filteredServices.forEach(item => {
-                const tr = document.createElement('tr');
-                tr.className = "hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors";
-
-                const isCritical = item.OBSERVACIONES.toLowerCase().includes('fuera de servicio') || 
-                                   item.OBSERVACIONES.toLowerCase().includes('inoperativo') || 
-                                   item.OBSERVACIONES.toLowerCase().includes('dañada') || 
-                                   item.OBSERVACIONES.toLowerCase().includes('crítica') ||
-                                   item.OBSERVACIONES.toLowerCase().includes('falla');
+        // --- STREAMING_CHUNK: Renderizando la bitácora de visitas técnicas en la Vista General ---
+        function renderDashboardServicesTable() {
+            try {
+                const tableBody = document.getElementById('dash-services-table-body');
+                const noResults = document.getElementById('dash-services-no-results');
+                const countLabel = document.getElementById('dash-services-count');
                 
-                const alertIndicator = isCritical ? `<span class="inline-block w-2.5 h-2.5 rounded-full bg-rose-500 mr-2 animate-ping" title="Falla crítica de operación"></span>` : '';
+                if (!tableBody) return;
+                tableBody.innerHTML = '';
 
-                tr.innerHTML = `
-                    <td class="px-6 py-4 text-slate-500 dark:text-slate-400 font-semibold whitespace-nowrap">${item.FECHA}</td>
-                    <td class="px-6 py-4 font-bold text-slate-950 dark:text-white">${item.EMPRESA}</td>
-                    <td class="px-6 py-4 font-semibold text-slate-700 dark:text-slate-300">
-                        <span class="inline-flex items-center">
-                            ${alertIndicator}
-                            ${item.EQUIPO}
-                        </span>
-                    </td>
-                    <td class="px-6 py-4 text-slate-600 dark:text-slate-400 leading-relaxed max-w-md">${item.OBSERVACIONES}</td>
-                    <td class="px-6 py-4 whitespace-nowrap no-print">
-                        <a href="${item.PDF_LINK}" target="_blank" class="inline-flex items-center space-x-1.5 bg-rose-50 dark:bg-rose-950/20 hover:bg-rose-100 dark:hover:bg-rose-950/40 text-rose-600 dark:text-rose-400 px-3.5 py-2 rounded-xl text-xs font-bold transition-all border border-rose-100 dark:border-rose-950/30">
-                            <i data-lucide="file-text" class="w-3.5 h-3.5"></i>
-                            <span>Ver PDF</span>
-                        </a>
-                    </td>
-                `;
-                tableBody.appendChild(tr);
-            });
+                countLabel.innerText = filteredServices.length;
 
-            lucide.createIcons();
-        }
-
-        // --- CÁLCULO DE INTELIGENCIA DE NEGOCIOS Y ANALÍTICA ---
-        function calculateBusinessIntelligence() {
-            // 1. Servicios totales del mes actual (Mayo 2026)
-            const mayo2026Services = filteredServices.filter(s => s.FECHA.includes('/05/2026'));
-            document.getElementById('analisis-servicios-mes').innerText = mayo2026Services.length;
-
-            // 2. Tasa de criticidad del mes
-            const criticalServices = filteredServices.filter(s => 
-                s.OBSERVACIONES.toLowerCase().includes('fuera de servicio') || 
-                s.OBSERVACIONES.toLowerCase().includes('inoperativo') ||
-                s.OBSERVACIONES.toLowerCase().includes('crítica')
-            );
-            const rate = filteredServices.length > 0 ? Math.round((criticalServices.length / filteredServices.length) * 100) : 0;
-            document.getElementById('analisis-tasa-criticidad').innerText = `${rate}%`;
-
-            // 3. Cuello de botella: Identificar el equipo que más se repite en servicios correctivos
-            const counter = {};
-            let maxCount = 0;
-            let bottleneck = "Ninguno Detectado";
-
-            filteredServices.forEach(s => {
-                counter[s.EQUIPO] = (counter[s.EQUIPO] || 0) + 1;
-                if (counter[s.EQUIPO] > maxCount) {
-                    maxCount = counter[s.EQUIPO];
-                    bottleneck = s.EQUIPO;
+                if (filteredServices.length === 0) {
+                    noResults.classList.remove('hidden');
+                    return;
                 }
-            });
 
-            document.getElementById('analisis-cuello-botella').innerText = maxCount > 0 ? `${bottleneck} (${maxCount} fallas)` : "Estable";
+                noResults.classList.add('hidden');
+
+                filteredServices.forEach(item => {
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors";
+
+                    const obs = item.OBSERVACIONES ? String(item.OBSERVACIONES).toLowerCase() : '';
+                    const isCritical = obs.includes('fuera de servicio') || 
+                                       obs.includes('inoperativo') || 
+                                       obs.includes('dañada') || 
+                                       obs.includes('crítica') ||
+                                       obs.includes('falla');
+                    
+                    const alertIndicator = isCritical ? `<span class="inline-block w-2.5 h-2.5 rounded-full bg-rose-500 mr-2 animate-ping" title="Falla crítica de operación"></span>` : '';
+
+                    tr.innerHTML = `
+                        <td class="px-6 py-4 text-slate-500 dark:text-slate-400 font-semibold whitespace-nowrap">${item.FECHA || ''}</td>
+                        <td class="px-6 py-4 font-bold text-slate-950 dark:text-white">${item.EMPRESA || ''}</td>
+                        <td class="px-6 py-4 font-semibold text-slate-700 dark:text-slate-300">
+                            <span class="inline-flex items-center">
+                                ${alertIndicator}
+                                ${item.EQUIPO || ''}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-slate-600 dark:text-slate-400 leading-relaxed max-w-md">${item.OBSERVACIONES || ''}</td>
+                        <td class="px-6 py-4 whitespace-nowrap no-print">
+                            <a href="${item.PDF_LINK || '#'}" target="_blank" class="inline-flex items-center space-x-1.5 bg-rose-50 dark:bg-rose-950/20 hover:bg-rose-100 dark:hover:bg-rose-950/40 text-rose-600 dark:text-rose-400 px-3.5 py-2 rounded-xl text-xs font-bold transition-all border border-rose-100 dark:border-rose-950/30">
+                                <i data-lucide="file-text" class="w-3.5 h-3.5"></i>
+                                <span>Ver PDF</span>
+                            </a>
+                        </td>
+                    `;
+                    tableBody.appendChild(tr);
+                });
+
+                lucide.createIcons();
+            } catch (err) {
+                console.error("Error al renderizar tabla de servicios: ", err);
+            }
         }
 
-        // --- CREACIÓN E INICIALIZACIÓN DE GRÁFICOS (CHART.JS) ---
+        // --- STREAMING_CHUNK: Calculando análisis de fallas del mes e índices de criticidad ---
+        function calculateBusinessIntelligence() {
+            try {
+                const mayo2026Services = filteredServices.filter(s => s.FECHA && String(s.FECHA).includes('/05/2026'));
+                document.getElementById('analisis-servicios-mes').innerText = mayo2026Services.length;
+
+                const criticalServices = filteredServices.filter(s => {
+                    const obs = s.OBSERVACIONES ? String(s.OBSERVACIONES).toLowerCase() : '';
+                    return obs.includes('fuera de servicio') || obs.includes('inoperativo') || obs.includes('crítica');
+                });
+                const rate = filteredServices.length > 0 ? Math.round((criticalServices.length / filteredServices.length) * 100) : 0;
+                document.getElementById('analisis-tasa-criticidad').innerText = `${rate}%`;
+
+                const counter = {};
+                let maxCount = 0;
+                let bottleneck = "Ninguno Detectado";
+
+                filteredServices.forEach(s => {
+                    if (s.EQUIPO) {
+                        const eq = String(s.EQUIPO).trim();
+                        counter[eq] = (counter[eq] || 0) + 1;
+                        if (counter[eq] > maxCount) {
+                            maxCount = counter[eq];
+                            bottleneck = eq;
+                        }
+                    }
+                });
+
+                document.getElementById('analisis-cuello-botella').innerText = maxCount > 0 ? `${bottleneck} (${maxCount} fallas)` : "Estable";
+            } catch (err) {
+                console.error("Error en modulo de Analítica y Estrategia: ", err);
+            }
+        }
+
+        // --- STREAMING_CHUNK: Creando el motor interactivo de Chart.js con mapeo de eventos de click ---
         function initCharts() {
             Chart.defaults.font.family = "'Inter', sans-serif";
             Chart.defaults.color = '#94a3b8'; 
@@ -1487,7 +1450,6 @@
                 };
             };
 
-            // 1. Equipos por Tipo (Bar)
             const ctxTipos = document.getElementById('chart-tipos').getContext('2d');
             charts.tipos = new Chart(ctxTipos, {
                 type: 'bar',
@@ -1504,7 +1466,6 @@
                 }
             });
 
-            // 2. Marcas Principales (Horizontal Bar)
             const ctxMarcas = document.getElementById('chart-marcas').getContext('2d');
             charts.marcas = new Chart(ctxMarcas, {
                 type: 'bar',
@@ -1522,7 +1483,6 @@
                 }
             });
 
-            // 3. Ubicaciones (Donut)
             const ctxUbicaciones = document.getElementById('chart-ubicaciones').getContext('2d');
             charts.ubicaciones = new Chart(ctxUbicaciones, {
                 type: 'doughnut',
@@ -1538,7 +1498,6 @@
                 }
             });
 
-            // 4. Estado de Mantenimiento / Periodicidad (Line)
             const ctxPeriodicidad = document.getElementById('chart-periodicidades').getContext('2d');
             charts.periodicidad = new Chart(ctxPeriodicidad, {
                 type: 'line',
@@ -1554,7 +1513,6 @@
                 }
             });
 
-            // 5. Servicios por Empresa (Doughnut)
             const ctxServEmpresa = document.getElementById('chart-servicios-empresa').getContext('2d');
             charts.servEmpresa = new Chart(ctxServEmpresa, {
                 type: 'doughnut',
@@ -1570,7 +1528,6 @@
                 }
             });
 
-            // 6. Servicios por Tipo de Equipo (Bar)
             const ctxServEquipo = document.getElementById('chart-servicios-equipo').getContext('2d');
             charts.servEquipo = new Chart(ctxServEquipo, {
                 type: 'bar',
@@ -1588,97 +1545,101 @@
             });
         }
 
-        // --- ACTUALIZACIÓN DINÁMICA DE GRÁFICOS (CHART.JS) ---
+        // --- STREAMING_CHUNK: Dibujando barras, series e históricos dinámicos con Chart.js ---
         function updateDashboardCharts() {
-            if (!charts.tipos) return;
+            try {
+                if (!charts.tipos) return;
 
-            const getCounts = (dataset, propertyName) => {
-                const counts = {};
-                dataset.forEach(item => {
-                    const val = item[propertyName] ? item[propertyName].trim() : 'Otros';
-                    counts[val] = (counts[val] || 0) + 1;
-                });
-                return counts;
-            };
+                const getCounts = (dataset, propertyName) => {
+                    const counts = {};
+                    dataset.forEach(item => {
+                        const val = item[propertyName] ? String(item[propertyName]).trim() : 'Otros';
+                        counts[val] = (counts[val] || 0) + 1;
+                    });
+                    return counts;
+                };
 
-            // 1. Gráfico Tipos de Equipos
-            const tipoCounts = getCounts(filteredData, 'TIPO_EQUIPO');
-            const sortedTipos = Object.entries(tipoCounts).sort((a,b) => b[1] - a[1]);
-            charts.tipos.data.labels = sortedTipos.map(x => x[0]);
-            charts.tipos.data.datasets = [{
-                label: 'Equipos',
-                data: sortedTipos.map(x => x[1]),
-                backgroundColor: sortedTipos.map(x => x[0] === dashboardFilters.tipoEquipo ? '#0284c7' : 'rgba(14, 165, 233, 0.8)'),
-                borderRadius: 8
-            }];
-            charts.tipos.update('active'); // Método 'active' actualiza sin animaciones bruscas ni parpadeos
+                // 1. Gráfico Tipos de Equipos
+                const tipoCounts = getCounts(filteredData, 'TIPO_EQUIPO');
+                const sortedTipos = Object.entries(tipoCounts).sort((a,b) => b[1] - a[1]);
+                charts.tipos.data.labels = sortedTipos.map(x => x[0]);
+                charts.tipos.data.datasets = [{
+                    label: 'Equipos',
+                    data: sortedTipos.map(x => x[1]),
+                    backgroundColor: sortedTipos.map(x => x[0] === dashboardFilters.tipoEquipo ? '#0284c7' : 'rgba(14, 165, 233, 0.8)'),
+                    borderRadius: 8
+                }];
+                charts.tipos.update('active');
 
-            // 2. Gráfico Marcas
-            const marcaCounts = getCounts(filteredData, 'MARCA');
-            const sortedMarcas = Object.entries(marcaCounts).sort((a,b) => b[1] - a[1]).slice(0, 7);
-            charts.marcas.data.labels = sortedMarcas.map(x => x[0]);
-            charts.marcas.data.datasets = [{
-                label: 'Equipos',
-                data: sortedMarcas.map(x => x[1]),
-                backgroundColor: sortedMarcas.map(x => x[0] === dashboardFilters.marca ? '#7c3aed' : 'rgba(139, 92, 246, 0.8)'),
-                borderRadius: 8
-            }];
-            charts.marcas.update('active');
+                // 2. Gráfico Marcas
+                const marcaCounts = getCounts(filteredData, 'MARCA');
+                const sortedMarcas = Object.entries(marcaCounts).sort((a,b) => b[1] - a[1]).slice(0, 7);
+                charts.marcas.data.labels = sortedMarcas.map(x => x[0]);
+                charts.marcas.data.datasets = [{
+                    label: 'Equipos',
+                    data: sortedMarcas.map(x => x[1]),
+                    backgroundColor: sortedMarcas.map(x => x[0] === dashboardFilters.marca ? '#7c3aed' : 'rgba(139, 92, 246, 0.8)'),
+                    borderRadius: 8
+                }];
+                charts.marcas.update('active');
 
-            // 3. Gráfico Ubicaciones
-            const ubiCounts = getCounts(filteredData, 'UBICACION');
-            const sortedUbi = Object.entries(ubiCounts).sort((a,b) => b[1] - a[1]);
-            charts.ubicaciones.data.labels = sortedUbi.map(x => x[0]);
-            charts.ubicaciones.data.datasets = [{
-                data: sortedUbi.map(x => x[1]),
-                backgroundColor: ['#0ea5e9', '#10b981', '#f59e0b', '#6366f1', '#ec4899', '#f43f5e'],
-                borderWidth: 2,
-                borderColor: document.documentElement.classList.contains('dark') ? '#020617' : '#ffffff'
-            }];
-            charts.ubicaciones.update('active');
+                // 3. Gráfico Ubicaciones
+                const ubiCounts = getCounts(filteredData, 'UBICACION');
+                const sortedUbi = Object.entries(ubiCounts).sort((a,b) => b[1] - a[1]);
+                charts.ubicaciones.data.labels = sortedUbi.map(x => x[0]);
+                charts.ubicaciones.data.datasets = [{
+                    data: sortedUbi.map(x => x[1]),
+                    backgroundColor: ['#0ea5e9', '#10b981', '#f59e0b', '#6366f1', '#ec4899', '#f43f5e'],
+                    borderWidth: 2,
+                    borderColor: document.documentElement.classList.contains('dark') ? '#020617' : '#ffffff'
+                }];
+                charts.ubicaciones.update('active');
 
-            // 4. Gráfico Periodicidad
-            const periodCounts = getCounts(filteredData, 'PERIODICIDAD');
-            const sortedPeriod = Object.entries(periodCounts).sort((a,b) => b[1] - a[1]);
-            charts.periodicidad.data.labels = sortedPeriod.map(x => x[0]);
-            charts.periodicidad.data.datasets = [{
-                label: 'Equipos',
-                data: sortedPeriod.map(x => x[1]),
-                backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                borderColor: '#10b981',
-                borderWidth: 3,
-                tension: 0.3,
-                fill: true,
-                pointBackgroundColor: '#10b981'
-            }];
-            charts.periodicidad.update('active');
+                // 4. Gráfico Periodicidad
+                const periodCounts = getCounts(filteredData, 'PERIODICIDAD');
+                const sortedPeriod = Object.entries(periodCounts).sort((a,b) => b[1] - a[1]);
+                charts.periodicidad.data.labels = sortedPeriod.map(x => x[0]);
+                charts.periodicidad.data.datasets = [{
+                    label: 'Equipos',
+                    data: sortedPeriod.map(x => x[1]),
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    borderColor: '#10b981',
+                    borderWidth: 3,
+                    tension: 0.3,
+                    fill: true,
+                    pointBackgroundColor: '#10b981'
+                }];
+                charts.periodicidad.update('active');
 
-            // 5. Gráfico de Servicios por Empresa
-            const servEmpCounts = getCounts(filteredServices, 'EMPRESA');
-            const sortedServEmp = Object.entries(servEmpCounts).sort((a,b) => b[1] - a[1]);
-            charts.servEmpresa.data.labels = sortedServEmp.map(x => x[0]);
-            charts.servEmpresa.data.datasets = [{
-                data: sortedServEmp.map(x => x[1]),
-                backgroundColor: ['#3b82f6', '#f59e0b', '#10b981', '#ec4899', '#8b5cf6'],
-                borderWidth: 2,
-                borderColor: document.documentElement.classList.contains('dark') ? '#020617' : '#ffffff'
-            }];
-            charts.servEmpresa.update('active');
+                // 5. Gráfico de Servicios por Empresa
+                const servEmpCounts = getCounts(filteredServices, 'EMPRESA');
+                const sortedServEmp = Object.entries(servEmpCounts).sort((a,b) => b[1] - a[1]);
+                charts.servEmpresa.data.labels = sortedServEmp.map(x => x[0]);
+                charts.servEmpresa.data.datasets = [{
+                    data: sortedServEmp.map(x => x[1]),
+                    backgroundColor: ['#3b82f6', '#f59e0b', '#10b981', '#ec4899', '#8b5cf6'],
+                    borderWidth: 2,
+                    borderColor: document.documentElement.classList.contains('dark') ? '#020617' : '#ffffff'
+                }];
+                charts.servEmpresa.update('active');
 
-            // 6. Gráfico de Servicios por Tipo de Equipo
-            const servTipoCounts = getCounts(filteredServices, 'TIPO_EQUIPO');
-            const sortedServTipo = Object.entries(servTipoCounts).sort((a,b) => b[1] - a[1]);
-            charts.servEquipo.data.labels = sortedServTipo.map(x => x[0]);
-            charts.servEquipo.data.datasets = [{
-                label: 'Servicios',
-                data: sortedServTipo.map(x => x[1]),
-                backgroundColor: sortedServTipo.map(x => x[0] === dashboardFilters.tipoEquipo ? '#10b981' : 'rgba(16, 185, 129, 0.85)'),
-                borderRadius: 8
-            }];
-            charts.servEquipo.update('active');
+                // 6. Gráfico de Servicios por Tipo de Equipo
+                const servTipoCounts = getCounts(filteredServices, 'TIPO_EQUIPO');
+                const sortedServTipo = Object.entries(servTipoCounts).sort((a,b) => b[1] - a[1]);
+                charts.servEquipo.data.labels = sortedServTipo.map(x => x[0]);
+                charts.servEquipo.data.datasets = [{
+                    label: 'Servicios',
+                    data: sortedServTipo.map(x => x[1]),
+                    backgroundColor: sortedServTipo.map(x => x[0] === dashboardFilters.tipoEquipo ? '#10b981' : 'rgba(16, 185, 129, 0.85)'),
+                    borderRadius: 8
+                }];
+                charts.servEquipo.update('active');
+            } catch (err) {
+                console.error("Error al actualizar gráficos: ", err);
+            }
         }
 
-        // --- EXPORTAR REPORTES PDF ---
+        // --- STREAMING_CHUNK: Creando el listador y paginador secundario para inventario plano ---
         function exportDashboardPDF() {
             const printDateSpan = document.getElementById('print-date');
             if (printDateSpan) {
@@ -1686,34 +1647,6 @@
                 printDateSpan.innerText = now.toLocaleString();
             }
             window.print();
-        }
-
-        // --- PESTAÑA INVENTARIO (DETALLE ADICIONAL) ---
-        function populateSecondaryFilters() {
-            const populate = (elementId, propertyName, label) => {
-                const select = document.getElementById(elementId);
-                if (!select) return;
-                const currentValue = select.value;
-                const uniqueValues = [...new Set(currentData.map(item => item[propertyName].trim()))].filter(Boolean).sort();
-                
-                select.innerHTML = `<option value="">${label}</option>`;
-                uniqueValues.forEach(val => {
-                    const option = document.createElement('option');
-                    option.value = val;
-                    option.className = "bg-white dark:bg-slate-900";
-                    option.innerText = val;
-                    select.appendChild(option);
-                });
-
-                if (uniqueValues.includes(currentValue)) {
-                    select.value = currentValue;
-                }
-            };
-
-            populate('filter-tipo', 'TIPO_EQUIPO', 'Todos los Tipos');
-            populate('filter-marca', 'MARCA', 'Todas las Marcas');
-            populate('filter-ubicacion', 'UBICACION', 'Todas las Ubicaciones');
-            populate('filter-periodicidad', 'PERIODICIDAD', 'Cualquier Periodicidad');
         }
 
         function filterData() {
@@ -1725,10 +1658,10 @@
 
             filteredData = currentData.filter(item => {
                 const matchSearch = searchQuery === "" || 
-                    item.ID_EQUIPO.toString().toLowerCase().includes(searchQuery) ||
-                    item.NOMBRE_EQUIPO.toLowerCase().includes(searchQuery) ||
-                    item.SERIE.toLowerCase().includes(searchQuery) ||
-                    item.MODELO.toLowerCase().includes(searchQuery);
+                    (item.ID_EQUIPO && String(item.ID_EQUIPO).toLowerCase().includes(searchQuery)) ||
+                    (item.NOMBRE_EQUIPO && String(item.NOMBRE_EQUIPO).toLowerCase().includes(searchQuery)) ||
+                    (item.SERIE && String(item.SERIE).toLowerCase().includes(searchQuery)) ||
+                    (item.MODELO && String(item.MODELO).toLowerCase().includes(searchQuery));
 
                 const matchTipo = tipoFilter === "" || item.TIPO_EQUIPO === tipoFilter;
                 const matchMarca = marcaFilter === "" || item.MARCA === marcaFilter;
@@ -1777,7 +1710,7 @@
                 tr.className = "hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors";
 
                 let badgeClass = "bg-sky-100 text-sky-800 dark:bg-sky-900/30 dark:text-sky-300";
-                const pUpper = item.PERIODICIDAD.toUpperCase();
+                const pUpper = item.PERIODICIDAD ? String(item.PERIODICIDAD).toUpperCase() : '';
                 if (pUpper.includes('TRIMESTRAL') || pUpper.includes('BIMESTRAL') || pUpper.includes('MENSUAL')) {
                     badgeClass = "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300";
                 } else if (pUpper.includes('DE BAJA') || pUpper.includes('BAJA')) {
@@ -1789,20 +1722,20 @@
                 }
 
                 tr.innerHTML = `
-                    <td class="px-6 py-4 font-mono font-semibold text-slate-500">${item.ID_EQUIPO}</td>
-                    <td class="px-6 py-4 font-semibold text-slate-900 dark:text-white">${item.NOMBRE_EQUIPO}</td>
+                    <td class="px-6 py-4 font-mono font-semibold text-slate-500">${item.ID_EQUIPO || ''}</td>
+                    <td class="px-6 py-4 font-semibold text-slate-900 dark:text-white">${item.NOMBRE_EQUIPO || ''}</td>
                     <td class="px-6 py-4">
-                        <span class="px-2 py-1 text-xs font-semibold rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">${item.TIPO_EQUIPO}</span>
+                        <span class="px-2 py-1 text-xs font-semibold rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">${item.TIPO_EQUIPO || ''}</span>
                     </td>
-                    <td class="px-6 py-4 text-slate-500 dark:text-slate-400 font-medium">${item.UBICACION}</td>
+                    <td class="px-6 py-4 text-slate-500 dark:text-slate-400 font-medium">${item.UBICACION || ''}</td>
                     <td class="px-6 py-4">
-                        <div class="font-medium text-slate-900 dark:text-white">${item.MARCA}</div>
+                        <div class="font-medium text-slate-900 dark:text-white">${item.MARCA || ''}</div>
                         <div class="text-xs text-slate-400">${item.MODELO || '-'}</div>
                     </td>
                     <td class="px-6 py-4 font-mono text-xs text-slate-500">${item.SERIE || '-'}</td>
                     <td class="px-6 py-4">
                         <span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold ${badgeClass}">
-                            ${item.PERIODICIDAD}
+                            ${item.PERIODICIDAD || ''}
                         </span>
                     </td>
                 `;
@@ -1834,7 +1767,6 @@
             }
         }
 
-        // --- CONTROL DE TEMA ---
         function toggleDarkMode() {
             const html = document.documentElement;
             const sunIcon = document.getElementById('sun-icon');
@@ -1865,11 +1797,13 @@
         const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches;
         if (userTheme === 'dark' || (!userTheme && systemTheme)) {
             document.documentElement.classList.add('dark');
-            document.getElementById('sun-icon').classList.remove('hidden');
-            document.getElementById('moon-icon').classList.add('hidden');
+            const sun = document.getElementById('sun-icon');
+            const moon = document.getElementById('moon-icon');
+            if (sun) sun.classList.remove('hidden');
+            if (moon) moon.classList.add('hidden');
         }
 
-        // --- ACTUALIZACIÓN DE ESTADO Y TIMESTAMPS ---
+        // --- STREAMING_CHUNK: Implementando actualizadores de estado invisibles y notificaciones Toast ---
         function updateSyncStatus(isSuccess, errorMessage = "") {
             const dot = document.getElementById('sync-dot');
             const label = document.getElementById('sync-status');
@@ -1892,12 +1826,12 @@
                 } else {
                     label.innerText = "Sincronizado con Sheets";
                     label.className = "text-xs font-semibold text-emerald-400";
-                    alertBanner.classList.add('hidden');
+                    alertBanner.classList.add('hidden'); // APAGA EL BANNER AUTOMÁTICAMENTE
                 }
             } else {
                 dot.firstElementChild.className = "absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75 animate-pulse";
                 dot.lastElementChild.className = "relative inline-flex rounded-full h-3.5 w-3.5 bg-rose-500";
-                label.innerText = "Error / Usando Caché";
+                label.innerText = "Error de Conexión";
                 label.className = "text-xs font-semibold text-rose-400";
                 
                 document.getElementById('alert-message').innerText = `Error: ${errorMessage || 'No se puede conectar a Google Sheets'}. Comprueba que la pestaña sea 'EQUIPOS' y que el archivo esté compartido de forma pública.`;
@@ -1905,7 +1839,6 @@
             }
         }
 
-        // --- NOTIFICACIONES TOAST ---
         function showToast(message, iconName, bgClass = "bg-slate-900 text-white") {
             const toast = document.getElementById('toast');
             const toastMsg = document.getElementById('toast-message');
