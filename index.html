@@ -54,13 +54,21 @@
         }
 
         /* CORRECCIÓN DE LEGIBILIDAD EN MODO OSCURO PARA SELECTORES NATIVOS */
+        select {
+            color-scheme: light;
+        }
+        .dark select {
+            color-scheme: dark;
+            background-color: #0f172a !important;
+            color: #f1f5f9 !important;
+        }
         select option {
             background-color: #ffffff !important;
-            color: #1e293b !important; /* Slate 800 */
+            color: #1e293b !important;
         }
         .dark select option {
-            background-color: #0f172a !important; /* Slate 900 */
-            color: #f1f5f9 !important; /* Slate 100 */
+            background-color: #0f172a !important;
+            color: #f1f5f9 !important;
         }
 
         /* Estilos de Impresión optimizados para el Botón Exportar PDF */
@@ -233,7 +241,7 @@
                             <!-- Filtro Empresa -->
                             <div class="space-y-1">
                                 <label class="text-xs font-bold text-slate-400 uppercase tracking-wider">Empresa / Cliente</label>
-                                <select id="dash-filter-empresa" onchange="handleDropdownFilterChange()" class="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-transparent text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                                <select id="dash-filter-empresa" onchange="handleDropdownFilterChange()" class="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-transparent text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-slate-900">
                                     <option value="">Todas las Empresas</option>
                                 </select>
                             </div>
@@ -241,7 +249,7 @@
                             <!-- Filtro Tipo de Equipo -->
                             <div class="space-y-1">
                                 <label class="text-xs font-bold text-slate-400 uppercase tracking-wider">Tipo de Equipo</label>
-                                <select id="dash-filter-tipo" onchange="handleDropdownFilterChange()" class="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-transparent text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                                <select id="dash-filter-tipo" onchange="handleDropdownFilterChange()" class="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-transparent text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-slate-900">
                                     <option value="">Todos los Tipos</option>
                                 </select>
                             </div>
@@ -249,7 +257,7 @@
                             <!-- Filtro Equipo Específico -->
                             <div class="space-y-1">
                                 <label class="text-xs font-bold text-slate-400 uppercase tracking-wider">Equipo Específico</label>
-                                <select id="dash-filter-equipo-nombre" onchange="handleDropdownFilterChange()" class="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-transparent text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                                <select id="dash-filter-equipo-nombre" onchange="handleDropdownFilterChange()" class="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-transparent text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-slate-900">
                                     <option value="">Todos los Equipos</option>
                                 </select>
                             </div>
@@ -387,14 +395,14 @@
                         </div>
                     </div>
 
-                    <!-- NOVEDAD: GRÁFICOS RESUMEN DE SERVICIOS EFECTUADOS (PEDIDO POR EL USUARIO) -->
+                    <!-- NOVEDAD: GRÁFICOS RESUMEN DE SERVICIOS EFECTUADOS -->
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         <!-- Gráfico de Servicios por Empresa -->
                         <div class="bg-white dark:bg-slate-950 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm chart-container-print">
                             <div class="flex items-center justify-between mb-4">
                                 <div>
                                     <h4 class="font-bold text-slate-900 dark:text-white">Servicios por Empresa / Cliente</h4>
-                                    <p class="text-xs text-slate-400 font-medium text-slate-400">Filtra al hacer clic en un cliente</p>
+                                    <p class="text-xs text-slate-400 font-medium">Filtra al hacer clic en un cliente</p>
                                 </div>
                                 <span class="text-xs text-emerald-500 font-bold">Servicios</span>
                             </div>
@@ -408,7 +416,7 @@
                             <div class="flex items-center justify-between mb-4">
                                 <div>
                                     <h4 class="font-bold text-slate-900 dark:text-white">Servicios por Tipo de Equipo</h4>
-                                    <p class="text-xs text-slate-400 font-medium text-slate-400">Volumen de mantenimiento por tipo de tecnología</p>
+                                    <p class="text-xs text-slate-400 font-medium">Volumen de mantenimiento por tipo de tecnología</p>
                                 </div>
                                 <span class="text-xs text-emerald-500 font-bold">Servicios</span>
                             </div>
@@ -472,14 +480,14 @@
 
                             <!-- Filtro Categoría -->
                             <div>
-                                <select id="filter-tipo" onchange="filterData()" class="w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                                <select id="filter-tipo" onchange="filterData()" class="w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-slate-900">
                                     <option value="">Todos los Tipos</option>
                                 </select>
                             </div>
 
                             <!-- Filtro Marca -->
                             <div>
-                                <select id="filter-marca" onchange="filterData()" class="w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                                <select id="filter-marca" onchange="filterData()" class="w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-slate-900">
                                     <option value="">Todas las Marcas</option>
                                 </select>
                             </div>
@@ -488,14 +496,14 @@
                         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                             <!-- Filtro Ubicacion -->
                             <div>
-                                <select id="filter-ubicacion" onchange="filterData()" class="w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                                <select id="filter-ubicacion" onchange="filterData()" class="w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-slate-900">
                                     <option value="">Todas las Ubicaciones</option>
                                 </select>
                             </div>
 
                             <!-- Filtro Periodicidad -->
                             <div>
-                                <select id="filter-periodicidad" onchange="filterData()" class="w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                                <select id="filter-periodicidad" onchange="filterData()" class="w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-slate-900">
                                     <option value="">Cualquier Periodicidad</option>
                                 </select>
                             </div>
@@ -645,7 +653,7 @@
                                     </h5>
                                     <ul class="list-disc list-inside text-xs text-slate-600 dark:text-slate-300 space-y-2">
                                         <li><strong>Bodega de Contingencia Crítica:</strong> Mantener stock físico localizado de reguladores de gas de 18 mbar y bobinas de solenoide para refrigerante R507. Esto reducirá el MTTR actual de 72 horas a menos de 4 horas en sedes principales.</li>
-                                        <li><strong>Actualización del SLA contractual:</strong> Reincorporar los equipos Rational bajo la modalida de mantenimiento trimestral unificado para mitigar fallas catastróficas por acumulación de sarro en calderas.</li>
+                                        <li><strong>Actualización del SLA contractual:</strong> Reincorporar los equipos Rational bajo la modalidad de mantenimiento trimestral unificado para mitigar fallas catastróficas por acumulación de sarro en calderas.</li>
                                     </ul>
                                 </div>
 
@@ -678,17 +686,17 @@
                             <div class="space-y-4">
                                 <div class="space-y-1">
                                     <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300">Enlace de Compartición de Google Sheets:</label>
-                                    <input type="text" id="sheets-url-input" class="w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500" placeholder="https://docs.google.com/spreadsheets/d/...">
+                                    <input type="text" id="sheets-url-input" class="w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-slate-900" placeholder="https://docs.google.com/spreadsheets/d/...">
                                 </div>
 
                                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div class="space-y-1">
                                         <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300">Nombre de la Hoja (Pestaña):</label>
-                                        <input type="text" id="sheets-tab-input" value="EQUIPOS" class="w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                                        <input type="text" id="sheets-tab-input" value="EQUIPOS" class="w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-slate-900">
                                     </div>
                                     <div class="space-y-1">
                                         <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300">Frecuencia de Actualización:</label>
-                                        <select id="sync-interval" class="w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                                        <select id="sync-interval" class="w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-slate-900">
                                             <option value="0">Sincronización Manual Únicamente</option>
                                             <option value="10000" selected>Cada 10 Segundos (En tiempo real)</option>
                                             <option value="30000">Cada 30 Segundos</option>
@@ -905,7 +913,6 @@
         let charts = {};
         let syncTimer = null;
 
-        // --- STREAMING_CHUNK: Inicializando las variables y filtros globales de cross-filtering ---
         // --- SISTEMA DE FILTRADO MULTI-PARAMÉTRICO GLOBAL (CROSS-FILTERING STATE) ---
         let dashboardFilters = {
             empresa: "",       
@@ -921,10 +928,11 @@
         let currentPageNum = 1;
         const itemsPerPage = 8;
 
-        // --- AJUSTES POR DEFECTO ---
+        // --- AJUSTES POR DEFECTO DEL USUARIO (HARDCODED PARA INSTALACIÓN INMEDIATA) ---
         const DEFAULT_URL = 'https://docs.google.com/spreadsheets/d/1gyKKsGhOjvZpXLA9j1B_rei5Ql-Ur160LVVuNvoWypQ/edit?usp=sharing';
         const DEFAULT_TAB = 'EQUIPOS';
 
+        // Inicializamos con los valores reales del usuario por defecto
         let config = {
             sheetUrl: DEFAULT_URL,
             tabName: DEFAULT_TAB,
@@ -937,13 +945,10 @@
         window.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
             loadSavedConfig();
+            loadDashboardFilters(); // Cargamos filtros previamente guardados antes de cargar datos
             initCharts();
             fetchSheetData();
             
-            // Llenar menús de la Vista General
-            populateDashboardFilters();
-            applyDashboardFilters();
-
             setupSyncSchedule();
         });
 
@@ -983,7 +988,6 @@
             }
         }
 
-        // --- STREAMING_CHUNK: Creando el procesador asíncrono para leer las dos pestañas en paralelo ---
         // --- SISTEMA DE SINCRONIZACIÓN AUTOMÁTICA (TIEMPO REAL INVISIBLE) ---
         function setupSyncSchedule() {
             if (syncTimer) {
@@ -1061,7 +1065,7 @@
                         complete: (res) => { if(res.data && res.data.length > 0) liveServicios = res.data; }
                     });
                 } else {
-                    console.warn("Fallo al descargar pestaña SERVICIO (Puede que aún no esté creada en tu Drive). Usando Mock histórico.");
+                    console.warn("Fallo al descargar pestaña SERVICIO. Usando Mock histórico de respaldo.");
                 }
 
                 if (liveEquipos) {
@@ -1071,7 +1075,6 @@
                     if (liveServicios) {
                         processIncomingServicios(liveServicios);
                     } else {
-                        // Si no hay pestaña de servicio real en el excel, conservamos el Mock de respaldo
                         filteredServices = [...MOCK_SERVICES];
                     }
 
@@ -1099,7 +1102,7 @@
             updateSyncStatus(false, errorMsg);
         }
 
-        // --- STREAMING_CHUNK: Normalizando campos de la pestaña EQUIPOS de forma ultra-segura contra nulos ---
+        // --- NORMALIZANDO CAMPOS DE EQUIPOS ---
         function processIncomingEquipos(rawData) {
             try {
                 const normalizedData = rawData.map((row, index) => {
@@ -1142,7 +1145,7 @@
             }
         }
 
-        // --- STREAMING_CHUNK: Normalizando campos de la pestaña SERVICIO para registrar incidencias de gas y frío ---
+        // --- NORMALIZANDO CAMPOS DE SERVICIOS ---
         function processIncomingServicios(rawData) {
             try {
                 const normalizedServices = rawData.map((row) => {
@@ -1167,13 +1170,13 @@
                 }).filter(s => s.EQUIPO !== 'Equipo General');
 
                 filteredServices = normalizedServices;
+                populateDashboardFilters();
                 applyDashboardFilters();
             } catch (err) {
                 console.error("Error procesando Servicios: ", err);
             }
         }
 
-        // --- STREAMING_CHUNK: Implementando la lógica del filtrado interactivo cruzado (Cross-Filtering) ---
         function populateSecondaryFilters() {
             const populate = (elementId, propertyName, label) => {
                 const select = document.getElementById(elementId);
@@ -1204,11 +1207,11 @@
             populate('filter-periodicidad', 'PERIODICIDAD', 'Cualquier Periodicidad');
         }
 
+        // --- SISTEMA PERSISTENTE DE FILTRADO (DASHBOARD) ---
         function populateDashboardFilters() {
-            const fillSelect = (selectId, values, defaultText) => {
+            const fillSelect = (selectId, values, defaultText, activeValue) => {
                 const select = document.getElementById(selectId);
                 if (!select) return;
-                const currVal = select.value;
                 select.innerHTML = `<option value="">${defaultText}</option>`;
                 values.forEach(val => {
                     const opt = document.createElement('option');
@@ -1216,17 +1219,23 @@
                     opt.innerText = val;
                     select.appendChild(opt);
                 });
-                if (values.includes(currVal)) select.value = currVal;
+                
+                // Mantenemos el filtro cargado si sigue existiendo en el pool de datos
+                if (activeValue && values.includes(activeValue)) {
+                    select.value = activeValue;
+                } else {
+                    select.value = "";
+                }
             };
 
             const empresas = [...new Set(filteredServices.map(s => s.EMPRESA ? String(s.EMPRESA).trim() : ''))].filter(Boolean).sort();
-            fillSelect('dash-filter-empresa', empresas, 'Todas las Empresas');
+            fillSelect('dash-filter-empresa', empresas, 'Todas las Empresas', dashboardFilters.empresa);
 
             const tipos = [...new Set(currentData.map(e => e.TIPO_EQUIPO ? String(e.TIPO_EQUIPO).trim() : ''))].filter(Boolean).sort();
-            fillSelect('dash-filter-tipo', tipos, 'Todos los Tipos');
+            fillSelect('dash-filter-tipo', tipos, 'Todos los Tipos', dashboardFilters.tipoEquipo);
 
             const nombres = [...new Set(currentData.map(e => e.NOMBRE_EQUIPO ? String(e.NOMBRE_EQUIPO).trim() : ''))].filter(Boolean).sort();
-            fillSelect('dash-filter-equipo-nombre', nombres, 'Todos los Equipos');
+            fillSelect('dash-filter-equipo-nombre', nombres, 'Todos los Equipos', dashboardFilters.equipoNombre);
         }
 
         function handleDropdownFilterChange() {
@@ -1240,6 +1249,9 @@
         }
 
         function applyDashboardFilters() {
+            // Guardar filtros activos en localStorage para que persistan en refresco o reinicio
+            localStorage.setItem('dashboard_filters', JSON.stringify(dashboardFilters));
+
             filteredData = currentData.filter(item => {
                 const itemTipo = item.TIPO_EQUIPO ? String(item.TIPO_EQUIPO).trim() : '';
                 const itemNombre = item.NOMBRE_EQUIPO ? String(item.NOMBRE_EQUIPO).trim() : '';
@@ -1278,15 +1290,109 @@
             calculateBusinessIntelligence(); 
         }
 
-        // --- STREAMING_CHUNK: Calculando tarjetas de KPIs dinámicos basados en inventarios reales ---
+        // --- SISTEMA DE PERSISTENCIA LOCAL EN NAVEGADOR ---
+        function loadSavedConfig() {
+            const saved = localStorage.getItem('dashboard_config');
+            if (saved) {
+                try {
+                    config = JSON.parse(saved);
+                } catch (e) {
+                    console.error("Error al cargar la configuración de caché", e);
+                }
+            }
+            
+            // Forzamos los valores del DOM a sincronizarse con la config cargada o la por defecto
+            document.getElementById('sheets-url-input').value = config.sheetUrl;
+            document.getElementById('sheets-tab-input').value = config.tabName;
+            document.getElementById('sync-interval').value = config.syncInterval;
+            document.getElementById('autosync-toggle').checked = config.autosync;
+        }
+
+        function loadDashboardFilters() {
+            const saved = localStorage.getItem('dashboard_filters');
+            if (saved) {
+                try {
+                    dashboardFilters = JSON.parse(saved);
+                } catch (e) {
+                    console.error("Error al cargar los filtros persistentes de localStorage", e);
+                }
+            }
+        }
+
+        // Parsear fecha en formato "DD/MM/YYYY HH:MM:SS"
+        function parseServiceDate(dateStr) {
+            try {
+                const parts = dateStr.split(' ');
+                const dateParts = parts[0].split('/');
+                return new Date(parseInt(dateParts[2]), parseInt(dateParts[1]) - 1, parseInt(dateParts[0]));
+            } catch(e) {
+                return new Date();
+            }
+        }
+
+        // Renderizar insignias de filtros aplicados
+        function renderActiveFilterBadges() {
+            const container = document.getElementById('active-badges-container');
+            const list = document.getElementById('active-badges-list');
+            if (!list) return;
+            list.innerHTML = '';
+
+            let hasFilters = false;
+
+            const addBadge = (key, val, label) => {
+                hasFilters = true;
+                const badge = document.createElement('div');
+                badge.className = "inline-flex items-center space-x-1.5 bg-sky-100 dark:bg-sky-950/40 text-primary-600 dark:text-sky-300 px-2.5 py-1 rounded-lg text-xs font-semibold border border-sky-200/50 dark:border-sky-900/30 animate-pulse";
+                badge.innerHTML = `
+                    <span>${label}: <strong class="text-sky-800 dark:text-sky-100">${val}</strong></span>
+                    <button onclick="clearSpecificFilter('${key}')" class="hover:text-rose-500 font-bold ml-1">✕</button>
+                `;
+                list.appendChild(badge);
+            };
+
+            if (dashboardFilters.empresa) addBadge('empresa', dashboardFilters.empresa, 'Empresa');
+            if (dashboardFilters.tipoEquipo) addBadge('tipoEquipo', dashboardFilters.tipoEquipo, 'Categoría');
+            if (dashboardFilters.equipoNombre) addBadge('equipoNombre', dashboardFilters.equipoNombre, 'Equipo');
+            if (dashboardFilters.marca) addBadge('marca', dashboardFilters.marca, 'Marca');
+            if (dashboardFilters.ubicacion) addBadge('ubicacion', dashboardFilters.ubicacion, 'Ubicación');
+            if (dashboardFilters.fechaInicio) addBadge('fechaInicio', dashboardFilters.fechaInicio, 'Desde');
+            if (dashboardFilters.fechaFin) addBadge('fechaFin', dashboardFilters.fechaFin, 'Hasta');
+
+            if (hasFilters) {
+                container.classList.remove('hidden');
+                container.classList.add('flex');
+            } else {
+                container.classList.add('hidden');
+                container.classList.remove('flex');
+            }
+        }
+
+        function clearSpecificFilter(key) {
+            dashboardFilters[key] = "";
+            applyDashboardFilters();
+        }
+
+        function resetDashboardFilters() {
+            dashboardFilters = {
+                empresa: "",
+                tipoEquipo: "",
+                equipoNombre: "",
+                marca: "",
+                ubicacion: "",
+                fechaInicio: "",
+                fechaFin: ""
+            };
+            applyDashboardFilters();
+            showToast("Filtros reestablecidos", "rotate-ccw", "bg-slate-800 text-white");
+        }
+
+        // --- REFRESCAR TARJETAS DE MÉTRICAS (KPIs ORIGINALMENTE REQUERIDOS) ---
         function updateDashboardKPIs() {
             try {
-                // Conteo de equipos únicos con servicio en el mes actual (Mayo 2026)
                 const serviciosMes = filteredServices.filter(s => s.FECHA && String(s.FECHA).includes('/05/2026'));
                 const equiposUnicosMes = [...new Set(serviciosMes.map(s => s.EQUIPO ? String(s.EQUIPO).trim().toUpperCase() : ''))].filter(Boolean).length;
                 document.getElementById('kpi-equipos-serviciados-mes').innerText = `${equiposUnicosMes} Equipos`;
 
-                // Conteo de operatividad de equipos
                 const totalEquipos = filteredData.length;
                 const deBaja = filteredData.filter(e => {
                     const p = e.PERIODICIDAD ? String(e.PERIODICIDAD).toUpperCase() : '';
@@ -1301,7 +1407,6 @@
                 document.getElementById('kpi-equipos-operativos').innerText = `${operativos} / ${totalEquipos}`;
                 document.getElementById('kpi-equipos-operativos-sub').innerText = `${deBaja} de baja • ${fueraContrato} fuera contrato`;
 
-                // Identificar proveedor con mayor cantidad de visitas en el mes/año
                 const obtenerLiderServicios = (listaServicios) => {
                     if (listaServicios.length === 0) return { nombre: "Sin Datos", count: 0 };
                     const counts = {};
@@ -1333,7 +1438,7 @@
             }
         }
 
-        // --- STREAMING_CHUNK: Renderizando la bitácora de visitas técnicas en la Vista General ---
+        // --- TABLA DE SERVICIOS EN VISTA GENERAL ---
         function renderDashboardServicesTable() {
             try {
                 const tableBody = document.getElementById('dash-services-table-body');
@@ -1366,17 +1471,17 @@
                     const alertIndicator = isCritical ? `<span class="inline-block w-2.5 h-2.5 rounded-full bg-rose-500 mr-2 animate-ping" title="Falla crítica de operación"></span>` : '';
 
                     tr.innerHTML = `
-                        <td class="px-6 py-4 text-slate-500 dark:text-slate-400 font-semibold whitespace-nowrap">${item.FECHA || ''}</td>
-                        <td class="px-6 py-4 font-bold text-slate-950 dark:text-white">${item.EMPRESA || ''}</td>
+                        <td class="px-6 py-4 text-slate-500 dark:text-slate-400 font-semibold whitespace-nowrap">${item.FECHA}</td>
+                        <td class="px-6 py-4 font-bold text-slate-950 dark:text-white">${item.EMPRESA}</td>
                         <td class="px-6 py-4 font-semibold text-slate-700 dark:text-slate-300">
                             <span class="inline-flex items-center">
                                 ${alertIndicator}
-                                ${item.EQUIPO || ''}
+                                ${item.EQUIPO}
                             </span>
                         </td>
-                        <td class="px-6 py-4 text-slate-600 dark:text-slate-400 leading-relaxed max-w-md">${item.OBSERVACIONES || ''}</td>
+                        <td class="px-6 py-4 text-slate-600 dark:text-slate-400 leading-relaxed max-w-md">${item.OBSERVACIONES}</td>
                         <td class="px-6 py-4 whitespace-nowrap no-print">
-                            <a href="${item.PDF_LINK || '#'}" target="_blank" class="inline-flex items-center space-x-1.5 bg-rose-50 dark:bg-rose-950/20 hover:bg-rose-100 dark:hover:bg-rose-950/40 text-rose-600 dark:text-rose-400 px-3.5 py-2 rounded-xl text-xs font-bold transition-all border border-rose-100 dark:border-rose-950/30">
+                            <a href="${item.PDF_LINK}" target="_blank" class="inline-flex items-center space-x-1.5 bg-rose-50 dark:bg-rose-950/20 hover:bg-rose-100 dark:hover:bg-rose-950/40 text-rose-600 dark:text-rose-400 px-3.5 py-2 rounded-xl text-xs font-bold transition-all border border-rose-100 dark:border-rose-950/30">
                                 <i data-lucide="file-text" class="w-3.5 h-3.5"></i>
                                 <span>Ver PDF</span>
                             </a>
@@ -1391,7 +1496,7 @@
             }
         }
 
-        // --- STREAMING_CHUNK: Calculando análisis de fallas del mes e índices de criticidad ---
+        // --- CÁLCULO DE INTELIGENCIA DE NEGOCIOS Y ANALÍTICA ---
         function calculateBusinessIntelligence() {
             try {
                 const mayo2026Services = filteredServices.filter(s => s.FECHA && String(s.FECHA).includes('/05/2026'));
@@ -1425,7 +1530,7 @@
             }
         }
 
-        // --- STREAMING_CHUNK: Creando el motor interactivo de Chart.js con mapeo de eventos de click ---
+        // --- CREACIÓN E INICIALIZACIÓN DE GRÁFICOS (CHART.JS) ---
         function initCharts() {
             Chart.defaults.font.family = "'Inter', sans-serif";
             Chart.defaults.color = '#94a3b8'; 
@@ -1450,6 +1555,7 @@
                 };
             };
 
+            // 1. Equipos por Tipo (Bar)
             const ctxTipos = document.getElementById('chart-tipos').getContext('2d');
             charts.tipos = new Chart(ctxTipos, {
                 type: 'bar',
@@ -1466,6 +1572,7 @@
                 }
             });
 
+            // 2. Marcas Principales (Horizontal Bar)
             const ctxMarcas = document.getElementById('chart-marcas').getContext('2d');
             charts.marcas = new Chart(ctxMarcas, {
                 type: 'bar',
@@ -1483,6 +1590,7 @@
                 }
             });
 
+            // 3. Ubicaciones (Donut)
             const ctxUbicaciones = document.getElementById('chart-ubicaciones').getContext('2d');
             charts.ubicaciones = new Chart(ctxUbicaciones, {
                 type: 'doughnut',
@@ -1498,6 +1606,7 @@
                 }
             });
 
+            // 4. Estado de Mantenimiento / Periodicidad (Line)
             const ctxPeriodicidad = document.getElementById('chart-periodicidades').getContext('2d');
             charts.periodicidad = new Chart(ctxPeriodicidad, {
                 type: 'line',
@@ -1513,6 +1622,7 @@
                 }
             });
 
+            // 5. Servicios por Empresa (Doughnut)
             const ctxServEmpresa = document.getElementById('chart-servicios-empresa').getContext('2d');
             charts.servEmpresa = new Chart(ctxServEmpresa, {
                 type: 'doughnut',
@@ -1528,6 +1638,7 @@
                 }
             });
 
+            // 6. Servicios por Tipo de Equipo (Bar)
             const ctxServEquipo = document.getElementById('chart-servicios-equipo').getContext('2d');
             charts.servEquipo = new Chart(ctxServEquipo, {
                 type: 'bar',
@@ -1545,7 +1656,7 @@
             });
         }
 
-        // --- STREAMING_CHUNK: Dibujando barras, series e históricos dinámicos con Chart.js ---
+        // --- ACTUALIZACIÓN DINÁMICA DE GRÁFICOS (CHART.JS) ---
         function updateDashboardCharts() {
             try {
                 if (!charts.tipos) return;
@@ -1639,7 +1750,7 @@
             }
         }
 
-        // --- STREAMING_CHUNK: Creando el listador y paginador secundario para inventario plano ---
+        // --- EXPORTAR REPORTES PDF ---
         function exportDashboardPDF() {
             const printDateSpan = document.getElementById('print-date');
             if (printDateSpan) {
@@ -1647,6 +1758,34 @@
                 printDateSpan.innerText = now.toLocaleString();
             }
             window.print();
+        }
+
+        // --- PESTAÑA INVENTARIO (DETALLE ADICIONAL) ---
+        function populateSecondaryFilters() {
+            const populate = (elementId, propertyName, label) => {
+                const select = document.getElementById(elementId);
+                if (!select) return;
+                const currentValue = select.value;
+                const uniqueValues = [...new Set(currentData.map(item => item[propertyName].trim()))].filter(Boolean).sort();
+                
+                select.innerHTML = `<option value="">${label}</option>`;
+                uniqueValues.forEach(val => {
+                    const option = document.createElement('option');
+                    option.value = val;
+                    option.className = "bg-white dark:bg-slate-900";
+                    option.innerText = val;
+                    select.appendChild(option);
+                });
+
+                if (uniqueValues.includes(currentValue)) {
+                    select.value = currentValue;
+                }
+            };
+
+            populate('filter-tipo', 'TIPO_EQUIPO', 'Todos los Tipos');
+            populate('filter-marca', 'MARCA', 'Todas las Marcas');
+            populate('filter-ubicacion', 'UBICACION', 'Todas las Ubicaciones');
+            populate('filter-periodicidad', 'PERIODICIDAD', 'Cualquier Periodicidad');
         }
 
         function filterData() {
@@ -1760,6 +1899,7 @@
             }
         }
 
+        // --- SISTEMA DE ACTUALIZACIÓN DE INTERFACES NATIVAS ---
         function nextPage() {
             if ((currentPageNum * itemsPerPage) < filteredData.length) {
                 currentPageNum++;
@@ -1803,7 +1943,7 @@
             if (moon) moon.classList.add('hidden');
         }
 
-        // --- STREAMING_CHUNK: Implementando actualizadores de estado invisibles y notificaciones Toast ---
+        // --- ACTUALIZACIÓN DE ESTADO Y TIMESTAMPS ---
         function updateSyncStatus(isSuccess, errorMessage = "") {
             const dot = document.getElementById('sync-dot');
             const label = document.getElementById('sync-status');
