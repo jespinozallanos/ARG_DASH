@@ -1,0 +1,1928 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full bg-slate-50 dark:bg-slate-900">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Control de Equipos - Servicio Técnico</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- PapaParse para parsear CSV -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Scrollbars premium */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        .dark ::-webkit-scrollbar-thumb {
+            background: #475569;
+        }
+
+        /* Estilos de Impresión optimizados para el Botón Exportar PDF */
+        @media print {
+            aside, header, #alert-banner, #filter-panel-container, .nav-tabs-btn, #toast, .no-print {
+                display: none !important;
+            }
+            main {
+                width: 100% !important;
+                padding: 0 !important;
+                background: white !important;
+                color: black !important;
+            }
+            .grid {
+                display: block !important;
+            }
+            .chart-container-print {
+                page-break-inside: avoid;
+                margin-bottom: 2rem;
+                border: 1px solid #e2e8f0 !important;
+            }
+            body {
+                background: white !important;
+                font-size: 12px;
+            }
+            table {
+                page-break-inside: auto;
+            }
+            tr {
+                page-break-inside: avoid;
+                page-break-after: auto;
+            }
+            .print-header {
+                display: block !important;
+            }
+        }
+    </style>
+</head>
+<body class="h-full text-slate-800 dark:text-slate-100 transition-colors duration-200">
+    <div class="min-h-full flex flex-col md:flex-row">
+        
+        <!-- SIDEBAR DE NAVEGACIÓN (Oculto en Impresión/PDF) -->
+        <aside class="w-full md:w-64 bg-slate-900 text-slate-100 flex-shrink-0 flex flex-col border-r border-slate-800 no-print">
+            <!-- Header Sidebar -->
+            <div class="p-6 border-b border-slate-800 flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="bg-primary-600 p-2 rounded-lg text-white">
+                        <i data-lucide="wrench" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-lg leading-none">SERVICIO</h1>
+                        <span class="text-xs text-slate-400">Control de Equipos</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Links de Navegación -->
+            <nav class="flex-1 p-4 space-y-1">
+                <button onclick="switchTab('resumen')" id="btn-resumen" class="tab-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg bg-primary-600 text-white font-medium transition-all">
+                    <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+                    <span>Vista General</span>
+                </button>
+                <button onclick="switchTab('equipos')" id="btn-equipos" class="tab-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white font-medium transition-all">
+                    <i data-lucide="list-filter" class="w-5 h-5"></i>
+                    <span>Inventario de Equipos</span>
+                </button>
+                <button onclick="switchTab('analisis')" id="btn-analisis" class="tab-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white font-medium transition-all">
+                    <i data-lucide="trending-up" class="w-5 h-5"></i>
+                    <span>Analítica y Estrategia</span>
+                </button>
+                <button onclick="switchTab('config')" id="btn-config" class="tab-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white font-medium transition-all">
+                    <i data-lucide="settings" class="w-5 h-5"></i>
+                    <span>Conexión Google Sheets</span>
+                </button>
+            </nav>
+
+            <!-- Status Indicator en Footer de Sidebar -->
+            <div class="p-4 border-t border-slate-800 bg-slate-950/50">
+                <div class="flex items-center space-x-3 mb-2">
+                    <span id="sync-dot" class="flex h-3.5 w-3.5 relative">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500"></span>
+                    </span>
+                    <span id="sync-status" class="text-xs font-medium text-emerald-400">Datos cargados (Demo)</span>
+                </div>
+                <div class="text-[10px] text-slate-500">
+                    Sincronizado: <span id="last-update-time">-</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- CONTENIDO PRINCIPAL -->
+        <main class="flex-1 flex flex-col overflow-hidden">
+            
+            <!-- ENCABEZADO EXCLUSIVO PARA IMPRESIÓN / EXPORTACIÓN PDF -->
+            <div class="hidden print-header p-6 border-b-2 border-slate-300 bg-white text-slate-900">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h1 class="text-2xl font-bold uppercase tracking-wide">Informe Ejecutivo de Servicio Técnico</h1>
+                        <p class="text-sm text-slate-600">Sistema de Control y Gestión de Equipos - Servicio Técnico</p>
+                    </div>
+                    <div class="text-right text-xs text-slate-500">
+                        <p>Fecha de Generación: <span id="print-date"></span></p>
+                        <p>Estado de Filtros: Aplicados y Personalizados</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TOP NAVBAR (Oculto en Impresión/PDF) -->
+            <header class="bg-white dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 px-6 py-4 flex items-center justify-between no-print">
+                <div class="flex items-center space-x-4">
+                    <h2 id="current-tab-title" class="text-xl font-bold text-slate-900 dark:text-white">Vista General</h2>
+                    <span id="realtime-badge" class="hidden px-2.5 py-0.5 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
+                        <span class="inline-block w-1.5 h-1.5 bg-blue-600 dark:bg-blue-400 rounded-full mr-1.5 animate-pulse"></span>
+                        Tiempo Real Activo
+                    </span>
+                </div>
+                
+                <div class="flex items-center space-x-4">
+                    <!-- Botón de Sincronizar Ahora -->
+                    <button onclick="fetchSheetData()" class="flex items-center space-x-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 px-4 py-2 rounded-lg font-medium text-sm transition-all">
+                        <i data-lucide="refresh-cw" class="w-4 h-4" id="sync-icon"></i>
+                        <span>Sincronizar ahora</span>
+                    </button>
+                    
+                    <!-- Toggle Tema Dark/Light -->
+                    <button onclick="toggleDarkMode()" class="p-2 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white rounded-lg bg-slate-100 dark:bg-slate-800 transition-all">
+                        <i data-lucide="sun" id="sun-icon" class="w-5 h-5 hidden"></i>
+                        <i data-lucide="moon" id="moon-icon" class="w-5 h-5"></i>
+                    </button>
+                </div>
+            </header>
+
+            <!-- MENSAJE DE ESTADO / ALERTAS GLOBAL -->
+            <div id="alert-banner" class="hidden px-6 py-3 bg-amber-500/10 border-b border-amber-500/20 text-amber-600 dark:text-amber-400 text-sm flex items-center justify-between no-print">
+                <div class="flex items-center space-x-2">
+                    <i data-lucide="alert-circle" class="w-5 h-5 flex-shrink-0"></i>
+                    <span id="alert-message">Utilizando datos de demostración. Configura tu Google Sheet para ver tus datos en tiempo real.</span>
+                </div>
+                <button onclick="switchTab('config')" class="underline font-medium hover:text-amber-700 dark:hover:text-amber-300 transition-all">Configurar</button>
+            </div>
+
+            <!-- CONTENEDOR MULTIPÁGINA (TABS) -->
+            <div class="flex-1 overflow-y-auto p-6 space-y-6">
+
+                <!-- 1. TAB Vista General (RESUMEN) -->
+                <div id="tab-resumen" class="space-y-6">
+                    
+                    <!-- PANEL DE FILTROS SUPERIOR (Oculto en Impresión/PDF) -->
+                    <div id="filter-panel-container" class="bg-white dark:bg-slate-950 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4 no-print">
+                        <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-900 pb-3">
+                            <h4 class="font-bold text-slate-900 dark:text-white flex items-center space-x-2">
+                                <i data-lucide="sliders" class="w-5 h-5 text-primary-500"></i>
+                                <span>Filtros Globales de la Vista General</span>
+                            </h4>
+                            <div class="flex items-center space-x-3">
+                                <button onclick="resetDashboardFilters()" class="text-xs font-semibold text-slate-500 hover:text-primary-600 dark:hover:text-primary-400 transition-all flex items-center space-x-1">
+                                    <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+                                    <span>Reestablecer todo</span>
+                                </button>
+                                <button onclick="exportDashboardPDF()" class="bg-rose-500 hover:bg-rose-600 text-white px-4 py-1.5 rounded-lg font-semibold text-xs transition-all flex items-center space-x-1.5 shadow-sm">
+                                    <i data-lucide="file-down" class="w-3.5 h-3.5"></i>
+                                    <span>Descargar Reporte PDF</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Grid de Dropdowns -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                            <!-- Filtro Empresa -->
+                            <div class="space-y-1">
+                                <label class="text-xs font-bold text-slate-400 uppercase tracking-wider">Empresa / Cliente</label>
+                                <select id="dash-filter-empresa" onchange="handleDropdownFilterChange()" class="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-transparent text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                                    <option value="" class="bg-white dark:bg-slate-900">Todas las Empresas</option>
+                                </select>
+                            </div>
+
+                            <!-- Filtro Tipo de Equipo -->
+                            <div class="space-y-1">
+                                <label class="text-xs font-bold text-slate-400 uppercase tracking-wider">Tipo de Equipo</label>
+                                <select id="dash-filter-tipo" onchange="handleDropdownFilterChange()" class="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-transparent text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                                    <option value="" class="bg-white dark:bg-slate-900">Todos los Tipos</option>
+                                </select>
+                            </div>
+
+                            <!-- Filtro Equipo Específico -->
+                            <div class="space-y-1">
+                                <label class="text-xs font-bold text-slate-400 uppercase tracking-wider">Equipo Específico</label>
+                                <select id="dash-filter-equipo-nombre" onchange="handleDropdownFilterChange()" class="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-transparent text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                                    <option value="" class="bg-white dark:bg-slate-900">Todos los Equipos</option>
+                                </select>
+                            </div>
+
+                            <!-- Rango de Fechas - Inicio -->
+                            <div class="space-y-1">
+                                <label class="text-xs font-bold text-slate-400 uppercase tracking-wider">Desde (Fecha)</label>
+                                <input type="date" id="dash-filter-fecha-inicio" onchange="handleDropdownFilterChange()" class="w-full px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-transparent text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                            </div>
+
+                            <!-- Rango de Fechas - Fin -->
+                            <div class="space-y-1">
+                                <label class="text-xs font-bold text-slate-400 uppercase tracking-wider">Hasta (Fecha)</label>
+                                <input type="date" id="dash-filter-fecha-fin" onchange="handleDropdownFilterChange()" class="w-full px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-transparent text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                            </div>
+                        </div>
+
+                        <!-- Sección de Filtros Activos (Chips) -->
+                        <div id="active-badges-container" class="hidden flex-wrap gap-2 pt-2 border-t border-slate-100 dark:border-slate-900 items-center">
+                            <span class="text-xs text-slate-400 font-semibold mr-1">Filtros Activos:</span>
+                            <div id="active-badges-list" class="flex flex-wrap gap-2">
+                                <!-- Se inyecta dinámicamente -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- KPI CARDS -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <!-- Equipos con Servicio (Mes) -->
+                        <div class="bg-white dark:bg-slate-950 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between animate-fade-in">
+                            <div class="space-y-1">
+                                <span class="text-sm font-semibold text-slate-500">Equipos con Servicio (Mes)</span>
+                                <h3 id="kpi-equipos-serviciados-mes" class="text-2xl font-bold tracking-tight text-slate-950 dark:text-white">-</h3>
+                                <p class="text-[10px] text-slate-400">Equipos únicos en Mayo</p>
+                            </div>
+                            <div class="p-4 bg-sky-100 dark:bg-sky-950/50 text-sky-600 dark:text-sky-400 rounded-2xl">
+                                <i data-lucide="wrench" class="w-6 h-6"></i>
+                            </div>
+                        </div>
+
+                        <!-- Estado Operativo -->
+                        <div class="bg-white dark:bg-slate-950 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between">
+                            <div class="space-y-1">
+                                <span class="text-sm font-semibold text-slate-500">Equipos Operativos</span>
+                                <h3 id="kpi-equipos-operativos" class="text-2xl font-bold tracking-tight text-slate-950 dark:text-white">-</h3>
+                                <p id="kpi-equipos-operativos-sub" class="text-[10px] text-slate-400">- de baja • - fuera contrato</p>
+                            </div>
+                            <div class="p-4 bg-violet-100 dark:bg-violet-950/50 text-violet-600 dark:text-violet-400 rounded-2xl">
+                                <i data-lucide="check-circle" class="w-6 h-6"></i>
+                            </div>
+                        </div>
+
+                        <!-- Líder Servicios (Mes) -->
+                        <div class="bg-white dark:bg-slate-950 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between">
+                            <div class="space-y-1 flex-1 min-w-0">
+                                <span class="text-sm font-semibold text-slate-500">Máx. Servicios (Mes)</span>
+                                <h3 id="kpi-lider-servicios-mes" class="text-xl font-bold tracking-tight text-slate-950 dark:text-white truncate" style="max-width: 140px;">-</h3>
+                                <p id="kpi-lider-servicios-mes-sub" class="text-[10px] text-slate-400">Líder del mes actual</p>
+                            </div>
+                            <div class="p-4 bg-amber-100 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 rounded-2xl flex-shrink-0">
+                                <i data-lucide="award" class="w-6 h-6"></i>
+                            </div>
+                        </div>
+
+                        <!-- Líder Servicios (Año) -->
+                        <div class="bg-white dark:bg-slate-950 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between">
+                            <div class="space-y-1 flex-1 min-w-0">
+                                <span class="text-sm font-semibold text-slate-500">Máx. Servicios (Año)</span>
+                                <h3 id="kpi-lider-servicios-anio" class="text-xl font-bold tracking-tight text-slate-950 dark:text-white truncate" style="max-width: 140px;">-</h3>
+                                <p id="kpi-lider-servicios-anio-sub" class="text-[10px] text-slate-400">Líder del año 2026</p>
+                            </div>
+                            <div class="p-4 bg-emerald-100 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 rounded-2xl flex-shrink-0">
+                                <i data-lucide="trophy" class="w-6 h-6"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- GRÁFICOS SECCIÓN 1: INVENTARIO -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- Distribución por Tipo de Equipo -->
+                        <div class="bg-white dark:bg-slate-950 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm chart-container-print">
+                            <div class="flex items-center justify-between mb-4">
+                                <div>
+                                    <h4 class="font-bold text-slate-900 dark:text-white">Equipos por Categoría</h4>
+                                    <p class="text-xs text-slate-400">Haz clic en una barra para filtrar por categoría</p>
+                                </div>
+                                <span class="text-xs text-slate-400">Interactiva</span>
+                            </div>
+                            <div class="relative h-80">
+                                <canvas id="chart-tipos"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Distribución por Marca -->
+                        <div class="bg-white dark:bg-slate-950 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm chart-container-print">
+                            <div class="flex items-center justify-between mb-4">
+                                <div>
+                                    <h4 class="font-bold text-slate-900 dark:text-white">Principales Fabricantes (Marcas)</h4>
+                                    <p class="text-xs text-slate-400">Haz clic para filtrar por marca del fabricante</p>
+                                </div>
+                                <span class="text-xs text-slate-400">Interactiva</span>
+                            </div>
+                            <div class="relative h-80">
+                                <canvas id="chart-marcas"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- UBICACIONES Y PERIODICIDAD -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <!-- Distribución por Ubicación -->
+                        <div class="bg-white dark:bg-slate-950 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm lg:col-span-1 flex flex-col justify-between chart-container-print">
+                            <div>
+                                <div class="flex items-center justify-between mb-4">
+                                    <div>
+                                        <h4 class="font-bold text-slate-900 dark:text-white">Ubicaciones Principales</h4>
+                                        <p class="text-xs text-slate-400">Haz clic para segmentar</p>
+                                    </div>
+                                </div>
+                                <div class="relative h-64 flex justify-center items-center">
+                                    <canvas id="chart-ubicaciones"></canvas>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Estado y Periodicidad de Mantenimiento -->
+                        <div class="bg-white dark:bg-slate-950 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm lg:col-span-2 chart-container-print">
+                            <div class="flex items-center justify-between mb-4">
+                                <h4 class="font-bold text-slate-900 dark:text-white">Estado de Mantenimiento (Periodicidad)</h4>
+                                <span class="text-xs text-slate-400">Vigentes vs De baja</span>
+                            </div>
+                            <div class="relative h-64">
+                                <canvas id="chart-periodicidades"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- NOVEDAD: GRÁFICOS RESUMEN DE SERVICIOS EFECTUADOS (PEDIDO POR EL USUARIO) -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- Gráfico de Servicios por Empresa -->
+                        <div class="bg-white dark:bg-slate-950 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm chart-container-print">
+                            <div class="flex items-center justify-between mb-4">
+                                <div>
+                                    <h4 class="font-bold text-slate-900 dark:text-white">Servicios por Empresa / Cliente</h4>
+                                    <p class="text-xs text-slate-400 font-medium text-slate-400">Filtra al hacer clic en un cliente</p>
+                                </div>
+                                <span class="text-xs text-emerald-500 font-bold">Servicios</span>
+                            </div>
+                            <div class="relative h-80">
+                                <canvas id="chart-servicios-empresa"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Gráfico de Servicios por Equipo -->
+                        <div class="bg-white dark:bg-slate-950 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm chart-container-print">
+                            <div class="flex items-center justify-between mb-4">
+                                <div>
+                                    <h4 class="font-bold text-slate-900 dark:text-white">Servicios por Tipo de Equipo</h4>
+                                    <p class="text-xs text-slate-400 font-medium text-slate-400">Volumen de mantenimiento por tipo de tecnología</p>
+                                </div>
+                                <span class="text-xs text-emerald-500 font-bold">Servicios</span>
+                            </div>
+                            <div class="relative h-80">
+                                <canvas id="chart-servicios-equipo"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TABLA INTEGRAL DE SERVICIOS EFECTUADOS (DENTRO DE LA VISTA GENERAL) -->
+                    <div class="bg-white dark:bg-slate-950 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm chart-container-print">
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
+                            <div>
+                                <h4 class="font-bold text-lg text-slate-900 dark:text-white">Bitácora Detallada de Servicios Realizados</h4>
+                                <p class="text-xs text-slate-400 mt-1">Historial filtrado de visitas técnicas y reportes firmados de la carpeta REPORTES_ARG</p>
+                            </div>
+                            <div class="flex items-center space-x-3 no-print">
+                                <div class="text-xs text-slate-500 font-medium">
+                                    Servicios en esta vista: <span id="dash-services-count" class="font-bold text-slate-900 dark:text-white">-</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse text-sm">
+                                <thead>
+                                    <tr class="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 text-slate-500 text-xs font-semibold uppercase tracking-wider">
+                                        <th class="px-6 py-4">Fecha</th>
+                                        <th class="px-6 py-4">Empresa / Cliente</th>
+                                        <th class="px-6 py-4">Equipo Intervenido</th>
+                                        <th class="px-6 py-4">Detalles del Servicio / Observaciones</th>
+                                        <th class="px-6 py-4 no-print">Informe</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="dash-services-table-body" class="divide-y divide-slate-200 dark:divide-slate-800">
+                                    <!-- Se inyecta dinámicamente con JS -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Mensaje Sin Resultados en Servicios -->
+                        <div id="dash-services-no-results" class="hidden p-12 text-center text-slate-400">
+                            <i data-lucide="alert-triangle" class="w-12 h-12 mx-auto mb-4 text-slate-300"></i>
+                            <p class="font-medium text-lg">No se encontraron servicios bajo los filtros seleccionados</p>
+                            <p class="text-sm">Prueba retirando alguna selección interactiva o rango de fecha.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. TAB LISTADO DE EQUIPOS (DETALLE ADICIONAL) -->
+                <div id="tab-equipos" class="space-y-6 hidden">
+                    
+                    <!-- FILTROS Y BÚSQUEDA -->
+                    <div class="bg-white dark:bg-slate-950 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <!-- Búsqueda General -->
+                            <div class="relative col-span-1 md:col-span-2">
+                                <i data-lucide="search" class="w-5 h-5 text-slate-400 absolute left-3 top-3"></i>
+                                <input type="text" id="search-input" onkeyup="filterData()" placeholder="Buscar por Nombre, ID, Serie o Modelo..." class="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent focus:ring-2 focus:ring-primary-500 focus:outline-none text-slate-800 dark:text-slate-100 placeholder-slate-400">
+                            </div>
+
+                            <!-- Filtro Categoría -->
+                            <div>
+                                <select id="filter-tipo" onchange="filterData()" class="w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                                    <option value="" class="bg-white dark:bg-slate-900">Todos los Tipos</option>
+                                </select>
+                            </div>
+
+                            <!-- Filtro Marca -->
+                            <div>
+                                <select id="filter-marca" onchange="filterData()" class="w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                                    <option value="" class="bg-white dark:bg-slate-900">Todas las Marcas</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <!-- Filtro Ubicacion -->
+                            <div>
+                                <select id="filter-ubicacion" onchange="filterData()" class="w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                                    <option value="" class="bg-white dark:bg-slate-900">Todas las Ubicaciones</option>
+                                </select>
+                            </div>
+
+                            <!-- Filtro Periodicidad -->
+                            <div>
+                                <select id="filter-periodicidad" onchange="filterData()" class="w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                                    <option value="" class="bg-white dark:bg-slate-900">Cualquier Periodicidad</option>
+                                </select>
+                            </div>
+
+                            <div class="col-span-1 md:col-span-2 flex justify-end items-center">
+                                <button onclick="resetFilters()" class="text-sm font-semibold text-slate-500 hover:text-slate-900 dark:hover:text-white transition-all flex items-center space-x-1">
+                                    <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                                    <span>Limpiar filtros</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TABLA DE EQUIPOS -->
+                    <div class="bg-white dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 text-slate-500 text-xs font-semibold uppercase tracking-wider">
+                                        <th class="px-6 py-4">ID</th>
+                                        <th class="px-6 py-4">Nombre de Equipo</th>
+                                        <th class="px-6 py-4">Categoría / Tipo</th>
+                                        <th class="px-6 py-4">Ubicación</th>
+                                        <th class="px-6 py-4">Marca y Modelo</th>
+                                        <th class="px-6 py-4">Nº Serie</th>
+                                        <th class="px-6 py-4">Periodicidad</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="equipos-table-body" class="divide-y divide-slate-200 dark:divide-slate-800 text-sm">
+                                    <!-- Las filas se renderizan dinámicamente con JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Mensaje Sin Resultados -->
+                        <div id="no-results-msg" class="hidden p-12 text-center text-slate-400">
+                            <i data-lucide="alert-triangle" class="w-12 h-12 mx-auto mb-4 text-slate-300"></i>
+                            <p class="font-medium text-lg">No se encontraron equipos</p>
+                            <p class="text-sm">Prueba ajustando los parámetros de búsqueda o filtros.</p>
+                        </div>
+
+                        <!-- Paginación y Contador -->
+                        <div class="px-6 py-4 border-t border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500 font-medium">
+                            <div>
+                                Mostrando <span id="table-showing-count">0</span> de <span id="table-total-count">0</span> equipos
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <button onclick="prevPage()" id="btn-prev-page" class="p-2 border border-slate-200 dark:border-slate-800 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-900 disabled:opacity-50 disabled:cursor-not-allowed">
+                                    <i data-lucide="chevron-left" class="w-4 h-4"></i>
+                                </button>
+                                <span class="bg-slate-100 dark:bg-slate-900 px-3 py-2 rounded-lg">Página <span id="current-page">1</span></span>
+                                <button onclick="nextPage()" id="btn-next-page" class="p-2 border border-slate-200 dark:border-slate-800 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-900 disabled:opacity-50 disabled:cursor-not-allowed">
+                                    <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. TAB NOVEDAD: ANALÍTICA Y ESTRATEGIA (ANÁLISIS COMPLETO) -->
+                <div id="tab-analisis" class="space-y-6 hidden">
+                    <!-- KPI DE ANÁLISIS DE RENDIMIENTO -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="bg-white dark:bg-slate-950 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                            <div class="flex items-center space-x-3 mb-2">
+                                <div class="bg-sky-500/10 p-2.5 rounded-xl text-sky-500">
+                                    <i data-lucide="calendar" class="w-5 h-5"></i>
+                                </div>
+                                <span class="text-sm font-semibold text-slate-500">Servicios Realizados (Mes)</span>
+                            </div>
+                            <h3 id="analisis-servicios-mes" class="text-3xl font-bold text-slate-950 dark:text-white">-</h3>
+                            <p class="text-xs text-slate-400 mt-1">Intervenciones técnicas correspondientes a Mayo 2026</p>
+                        </div>
+
+                        <div class="bg-white dark:bg-slate-950 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                            <div class="flex items-center space-x-3 mb-2">
+                                <div class="bg-rose-500/10 p-2.5 rounded-xl text-rose-500">
+                                    <i data-lucide="alert-octagon" class="w-5 h-5"></i>
+                                </div>
+                                <span class="text-sm font-semibold text-slate-500">Cuello de Botella Operativo</span>
+                            </div>
+                            <h3 id="analisis-cuello-botella" class="text-lg font-bold text-slate-950 dark:text-white truncate">-</h3>
+                            <p class="text-xs text-slate-400 mt-2">Equipo con mayor recurrencia de fallas graves registradas</p>
+                        </div>
+
+                        <div class="bg-white dark:bg-slate-950 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                            <div class="flex items-center space-x-3 mb-2">
+                                <div class="bg-emerald-500/10 p-2.5 rounded-xl text-emerald-500">
+                                    <i data-lucide="activity" class="w-5 h-5"></i>
+                                </div>
+                                <span class="text-sm font-semibold text-slate-500">Tasa de Criticidad Activa</span>
+                            </div>
+                            <h3 id="analisis-tasa-criticidad" class="text-3xl font-bold text-slate-950 dark:text-white">-</h3>
+                            <p class="text-xs text-slate-400 mt-1">Porcentaje de intervenciones con diagnóstico "Fuera de Servicio"</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- ANÁLISIS DEL MES Y HISTÓRICOS -->
+                        <div class="bg-white dark:bg-slate-950 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
+                            <div class="space-y-2 border-b border-slate-100 dark:border-slate-900 pb-3">
+                                <h4 class="font-bold text-lg text-slate-900 dark:text-white flex items-center space-x-2">
+                                    <i data-lucide="calendar-check" class="w-5 h-5 text-primary-500"></i>
+                                    <span>Análisis Mensual y Tendencias Históricas</span>
+                                </h4>
+                                <p class="text-xs text-slate-400">Auditoría técnica de ciclos de operación y desgaste</p>
+                            </div>
+
+                            <div class="space-y-4 text-sm leading-relaxed">
+                                <div class="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-200/50 dark:border-slate-800/40">
+                                    <h5 class="font-bold text-slate-900 dark:text-white text-xs uppercase tracking-wider mb-2 flex items-center space-x-1.5 text-sky-600 dark:text-sky-400">
+                                        <span class="inline-block w-1.5 h-1.5 bg-sky-500 rounded-full"></span>
+                                        <span>Análisis de Operación (Mayo 2026)</span>
+                                    </h5>
+                                    <p class="text-xs text-slate-600 dark:text-slate-300">
+                                        Durante el presente mes, se observa una fuerte concentración de fallas críticas en los **Sistemas de Refrigeración** de la sede USM Valparaíso, representados por las averías severas de solenoide y expansión en la <strong class="text-slate-900 dark:text-white">Cámara de Mantención C.C.8.1</strong>. Así mismo, la infraestructura de gas experimentó incidencias de regulación de flujo en la <strong class="text-slate-900 dark:text-white">Marmita C.C.1.1</strong>, resultando en interrupciones temporales de servicio de alimentación.
+                                    </p>
+                                </div>
+
+                                <div class="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-200/50 dark:border-slate-800/40">
+                                    <h5 class="font-bold text-slate-900 dark:text-white text-xs uppercase tracking-wider mb-2 flex items-center space-x-1.5 text-violet-600 dark:text-violet-400">
+                                        <span class="inline-block w-1.5 h-1.5 bg-violet-500 rounded-full"></span>
+                                        <span>Comportamiento Histórico de Fallas</span>
+                                    </h5>
+                                    <p class="text-xs text-slate-600 dark:text-slate-300">
+                                        El análisis acumulativo indica que las marcas <strong class="text-slate-900 dark:text-white">RATIONAL</strong> y <strong class="text-slate-900 dark:text-white">USINOX</strong> representan el núcleo operativo de las cocinas industriales pero demandan el 65% de las intervenciones correctivas del contrato. La periodicidad contractualmente definida como "Fuera de Contrato" en equipos Rational nuevos (SCC WE 201) genera picos de sobrecosto técnico debido a la falta de cobertura de repuestos preventivos incluidos.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- RECOMENDACIONES DE NEGOCIO Y ESTRATÉGICAS -->
+                        <div class="bg-white dark:bg-slate-950 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
+                            <div class="space-y-2 border-b border-slate-100 dark:border-slate-900 pb-3">
+                                <h4 class="font-bold text-lg text-slate-900 dark:text-white flex items-center space-x-2">
+                                    <i data-lucide="lightbulb" class="w-5 h-5 text-amber-500"></i>
+                                    <span>Plan de Recomendaciones de Negocio y CAPEX</span>
+                                </h4>
+                                <p class="text-xs text-slate-400">Estrategias operativas y comerciales de optimización</p>
+                            </div>
+
+                            <div class="space-y-4 text-sm leading-relaxed">
+                                <div class="bg-amber-500/5 p-4 rounded-xl border border-amber-500/10">
+                                    <h5 class="font-bold text-amber-600 dark:text-amber-400 text-xs uppercase tracking-wider mb-2 flex items-center space-x-1.5">
+                                        <i data-lucide="award" class="w-4 h-4"></i>
+                                        <span>Recomendaciones de Negocio (Corto Plazo)</span>
+                                    </h5>
+                                    <ul class="list-disc list-inside text-xs text-slate-600 dark:text-slate-300 space-y-2">
+                                        <li><strong>Bodega de Contingencia Crítica:</strong> Mantener stock físico localizado de reguladores de gas de 18 mbar y bobinas de solenoide para refrigerante R507. Esto reducirá el MTTR actual de 72 horas a menos de 4 horas en sedes principales.</li>
+                                        <li><strong>Actualización del SLA contractual:</strong> Reincorporar los equipos Rational bajo la modalidad de mantenimiento trimestral unificado para mitigar fallas catastróficas por acumulación de sarro en calderas.</li>
+                                    </ul>
+                                </div>
+
+                                <div class="bg-emerald-500/5 p-4 rounded-xl border border-emerald-500/10">
+                                    <h5 class="font-bold text-emerald-600 dark:text-emerald-400 text-xs uppercase tracking-wider mb-2 flex items-center space-x-1.5">
+                                        <i data-lucide="target" class="w-4 h-4"></i>
+                                        <span>Estrategia de CAPEX (Mediano y Largo Plazo)</span>
+                                    </h5>
+                                    <ul class="list-disc list-inside text-xs text-slate-600 dark:text-slate-300 space-y-2">
+                                        <li><strong>Descarbonización y Migración Tecnológica:</strong> Planificar el reemplazo paulatino de Marmitas de Gas obsoletas (Cleveland y Usinox sin serie) por sistemas de inducción eléctrica de alta eficiencia, disminuyendo la firma de carbono en un 30%.</li>
+                                        <li><strong>Sustitución de Activos Depreciados:</strong> Dar de baja inmediata y coordinar la compra de reemplazo de las unidades con estado "DE BAJA" definitivo (Mantenedor Caliente C.C.6.2, Termo 1, Lavavajillas C.C.11.1) para evitar fugas de energía y mermas en auditorías de higiene.</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. TAB CONFIGURACIÓN Y CONEXIÓN -->
+                <div id="tab-config" class="space-y-6 hidden">
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <!-- Panel de Entrada de URL -->
+                        <div class="bg-white dark:bg-slate-950 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm lg:col-span-2 space-y-6">
+                            <div class="space-y-2">
+                                <h4 class="font-bold text-lg text-slate-900 dark:text-white">Ajustes de Sincronización en Tiempo Real</h4>
+                                <p class="text-sm text-slate-500">Conecta el dashboard con tu hoja de cálculo "SERVICIO" para que los gráficos y tablas se actualicen automáticamente.</p>
+                            </div>
+
+                            <!-- Formulario Configuración -->
+                            <div class="space-y-4">
+                                <div class="space-y-1">
+                                    <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300">Enlace de Compartición de Google Sheets:</label>
+                                    <input type="text" id="sheets-url-input" class="w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500" placeholder="https://docs.google.com/spreadsheets/d/...">
+                                </div>
+
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div class="space-y-1">
+                                        <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300">Nombre de la Hoja (Pestaña):</label>
+                                        <input type="text" id="sheets-tab-input" value="EQUIPOS" class="w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                                    </div>
+                                    <div class="space-y-1">
+                                        <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300">Frecuencia de Actualización:</label>
+                                        <select id="sync-interval" class="w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                                            <option value="0" class="bg-white dark:bg-slate-900">Sincronización Manual Únicamente</option>
+                                            <option value="10000" class="bg-white dark:bg-slate-900" selected>Cada 10 Segundos (En tiempo real)</option>
+                                            <option value="30000" class="bg-white dark:bg-slate-900">Cada 30 Segundos</option>
+                                            <option value="60000" class="bg-white dark:bg-slate-900">Cada 1 Minuto</option>
+                                            <option value="300000" class="bg-white dark:bg-slate-900">Cada 5 Minutos</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="flex items-center space-x-2 pt-2">
+                                    <input type="checkbox" id="autosync-toggle" checked onchange="toggleAutoSync(this.checked)" class="w-4.5 h-4.5 text-primary-600 border-slate-300 rounded focus:ring-primary-500">
+                                    <label for="autosync-toggle" class="text-sm font-medium text-slate-700 dark:text-slate-300">Activar actualización continua en segundo plano</label>
+                                </div>
+
+                                <div class="pt-4 flex space-x-3">
+                                    <button onclick="saveConfig()" class="bg-primary-600 hover:bg-primary-700 text-white px-6 py-2.5 rounded-lg font-semibold text-sm shadow-sm transition-all flex items-center space-x-2">
+                                        <i data-lucide="save" class="w-4 h-4"></i>
+                                        <span>Guardar Configuración</span>
+                                    </button>
+                                    <button onclick="restoreDefaults()" class="border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-900 px-6 py-2.5 rounded-lg font-semibold text-sm transition-all">
+                                        <span>Restaurar Predeterminado</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Manual de Instrucciones en Drive -->
+                        <div class="bg-slate-900 text-slate-100 p-6 rounded-2xl border border-slate-800 shadow-sm space-y-6">
+                            <h4 class="font-bold text-lg flex items-center space-x-2">
+                                <i data-lucide="info" class="w-5 h-5 text-sky-400"></i>
+                                <span>¿Cómo sincronizar?</span>
+                            </h4>
+                            <div class="space-y-4 text-sm text-slate-300">
+                                <p class="text-xs">Para que el Dashboard funcione de manera automatizada desde una web externa, tu Google Sheet debe ser accesible sin credenciales privadas. Sigue estos sencillos pasos:</p>
+                                <ol class="list-decimal list-inside space-y-3 text-xs">
+                                    <li>Abre tu hoja <strong class="text-white">SERVICIO</strong> en Google Sheets.</li>
+                                    <li>Presiona el botón <strong class="text-primary-400">Compartir</strong> (arriba a la derecha).</li>
+                                    <li>En el apartado Acceso general, selecciona <strong class="text-white">"Cualquier persona con el enlace puede ver"</strong>.</li>
+                                    <li><strong>Opcional para optimizar la velocidad:</strong> Ve a <em class="text-slate-400">Archivo > Compartir > Publicar en la Web</em>. Elige la pestaña <em class="text-slate-400">"EQUIPOS"</em> y selecciona el formato <em class="text-slate-400">Valores separados por comas (.csv)</em>. Copia ese enlace largo y pégalo aquí para un procesamiento instantáneo y robusto.</li>
+                                </ol>
+                                <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 text-[11px] font-mono break-all text-slate-400">
+                                    URL ID del Archivo:<br>
+                                    <span class="text-amber-400">1gyKKsGhOjvZpXLA9j1B_rei5Ql-Ur160LVVuNvoWypQ</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- NOTIFICACIONES TOAST (Sustituto Premium de Alert) -->
+    <div id="toast" class="fixed bottom-5 right-5 z-50 bg-slate-900 text-white dark:bg-white dark:text-slate-900 px-5 py-3.5 rounded-xl shadow-xl flex items-center space-x-3 max-w-md transform translate-y-20 opacity-0 transition-all duration-300">
+        <div id="toast-icon-container" class="p-1 rounded-full bg-emerald-500/20 text-emerald-500">
+            <i data-lucide="check" class="w-4 h-4" id="toast-icon"></i>
+        </div>
+        <p class="text-sm font-semibold" id="toast-message">Datos sincronizados correctamente.</p>
+    </div>
+
+    <script>
+        // --- BASE DE DATOS LOCALES / CACHÉ ---
+        const MOCK_DATA = [
+            {ID_EQUIPO: 6, TIPO_EQUIPO: "MARMITA", NOMBRE_EQUIPO: "MARMITA C.C.1.3 (ex C.C.1.2)", MARCA: "CLEVELAND", MODELO: "", SERIE: "", UBICACION: "CASINO CENTRAL", PERIODICIDAD: "TRIMESTRAL"},
+            {ID_EQUIPO: 8, TIPO_EQUIPO: "MARMITA", NOMBRE_EQUIPO: "MARMITA C.C.1.2 (ex C.C.1.3)", MARCA: "BIGGI", MODELO: "", SERIE: "", UBICACION: "CASINO CENTRAL", PERIODICIDAD: "TRIMESTRAL"},
+            {ID_EQUIPO: 9, TIPO_EQUIPO: "MARMITA", NOMBRE_EQUIPO: "MARMITA C.C.1.1 (ex C.C.1.4)", MARCA: "USINOX", MODELO: "", SERIE: "", UBICACION: "CASINO CENTRAL", PERIODICIDAD: "TRIMESTRAL"},
+            {ID_EQUIPO: 10, TIPO_EQUIPO: "HORNO CONVECTOR", NOMBRE_EQUIPO: "HORNO C.C.2.1", MARCA: "RATIONAL", MODELO: "CM", SERIE: "", UBICACION: "CASINO CENTRAL", PERIODICIDAD: "FUERA CONTRATO"},
+            {ID_EQUIPO: 11, TIPO_EQUIPO: "HORNO CONVECTOR", NOMBRE_EQUIPO: "HORNO C.C.2.1 (ex C.C.2.2)", MARCA: "RATIONAL", MODELO: "CM", SERIE: "", UBICACION: "CASINO CENTRAL", PERIODICIDAD: "FUERA CONTRATO"},
+            {ID_EQUIPO: 12, TIPO_EQUIPO: "HORNO CONVECTOR", NOMBRE_EQUIPO: "HORNO C.C.2.2 (ex C.C.2.3)", MARCA: "RATIONAL (nuevo)", MODELO: "SCC WE 201", SERIE: "E21SI18022644915", UBICACION: "CASINO CENTRAL", PERIODICIDAD: "FUERA CONTRATO"},
+            {ID_EQUIPO: 13, TIPO_EQUIPO: "HORNO CONVECTOR", NOMBRE_EQUIPO: "HORNO C.C.2.4", MARCA: "RATIONAL", MODELO: "SCC WE 201", SERIE: "E21SI18092696801", UBICACION: "CASINO CENTRAL", PERIODICIDAD: "FUERA CONTRATO"},
+            {ID_EQUIPO: 15, TIPO_EQUIPO: "SARTEN BASCULANTE", NOMBRE_EQUIPO: "SARTEN BASCULANTE C.C.4.1 (ex C.C.4.2)", MARCA: "CLEVELAND", MODELO: "", SERIE: "", UBICACION: "CASINO CENTRAL", PERIODICIDAD: "TRIMESTRAL"},
+            {ID_EQUIPO: 16, TIPO_EQUIPO: "COCINA A GAS", NOMBRE_EQUIPO: "COCINA C.C.5.1", MARCA: "IMAHE", MODELO: "8 PLATOS", SERIE: "", UBICACION: "CASINO CENTRAL", PERIODICIDAD: "TRIMESTRAL"},
+            {ID_EQUIPO: 17, TIPO_EQUIPO: "MANTENEDOR CALIENTE", NOMBRE_EQUIPO: "MANTENEDOR CALIENTE C.C.6.1", MARCA: "FWE", MODELO: "X BANDEJAS", SERIE: "", UBICACION: "CASINO CENTRAL", PERIODICIDAD: "SEMESTRAL"},
+            {ID_EQUIPO: 18, TIPO_EQUIPO: "MANTENEDOR CALIENTE", NOMBRE_EQUIPO: "MANTENEDOR CALIENTE C.C.6.2. ZONA ACOPIO", MARCA: "IMAHE", MODELO: "OBA 14018", SERIE: "", UBICACION: "CASINO CENTRAL", PERIODICIDAD: "DE BAJA"},
+            {ID_EQUIPO: 19, TIPO_EQUIPO: "MANTENEDOR CALIENTE", NOMBRE_EQUIPO: "MANTENEDOR CALIENTE C.C.6.3.", MARCA: "OZTI", MODELO: "11 BANDEJAS", SERIE: "", UBICACION: "CASINO CENTRAL", PERIODICIDAD: "SEMESTRAL"},
+            {ID_EQUIPO: 25, TIPO_EQUIPO: "BAÑO MARIA", NOMBRE_EQUIPO: "BAÑO MARÍA C.C.7.1 LÍNEA 1", MARCA: "S/M", MODELO: "", SERIE: "", UBICACION: "CASINO CENTRAL", PERIODICIDAD: "BIMESTRAL"},
+            {ID_EQUIPO: 33, TIPO_EQUIPO: "EQUIPOS DE FRIO", NOMBRE_EQUIPO: "CÁMARA DE MANTENCIÓN C.C.8.1", MARCA: "S/M", MODELO: "MANTENCIÓN", SERIE: "", UBICACION: "CASINO CENTRAL", PERIODICIDAD: "BIMESTRAL"},
+            {ID_EQUIPO: 34, TIPO_EQUIPO: "EQUIPOS DE FRIO", NOMBRE_EQUIPO: "CÁMARA DE CONGELADOS C.C.8.2", MARCA: "S/M", MODELO: "CONGELADOS", SERIE: "", UBICACION: "CASINO CENTRAL", PERIODICIDAD: "BIMESTRAL"},
+            {ID_EQUIPO: 47, TIPO_EQUIPO: "LAVAVAJILLA", NOMBRE_EQUIPO: "LAVAVAJILLAS C.C.11.1", MARCA: "HOBART", MODELO: "", SERIE: "", UBICACION: "CASINO CENTRAL", PERIODICIDAD: "DE BAJA"},
+            {ID_EQUIPO: 53, TIPO_EQUIPO: "TERMO", NOMBRE_EQUIPO: "TERMO 1 ELECTRICO (De baja)", MARCA: "ALBIN TROTTER", MODELO: "", SERIE: "", UBICACION: "CASINO CENTRAL SUBTERRÁNEO", PERIODICIDAD: "DE BAJA"},
+            {ID_EQUIPO: 57, TIPO_EQUIPO: "MANTENEDOR CALIENTE", NOMBRE_EQUIPO: "MANTENEDOR CALIENTE C.PR.6.1", MARCA: "OZTI", MODELO: "", SERIE: "", UBICACION: "CASINO PROFESORES", PERIODICIDAD: "SEMESTRAL"},
+            {ID_EQUIPO: 73, TIPO_EQUIPO: "AIRE ACONDICIONADO", NOMBRE_EQUIPO: "AIRE ACONDICIONADO COMEDOR \"P\"", MARCA: "Midea", MODELO: "12.000 BTU/HR", SERIE: "", UBICACION: "COMEDOR P", PERIODICIDAD: "FUERA CONTRATO"},
+            {ID_EQUIPO: 102, TIPO_EQUIPO: "MARMITA", NOMBRE_EQUIPO: "(VÑ) MARMITA CC9.1", MARCA: "USINOX", MODELO: "MGA25", SERIE: "S/S", UBICACION: "COCINA", PERIODICIDAD: "TRIMESTRAL"}
+        ];
+
+        const MOCK_SERVICES = [
+            {
+                FECHA: "30/05/2026 21:41:55",
+                EMPRESA: "USM VALPO",
+                EQUIPO: "CÁMARA DE MANTENCIÓN C.C.8.1",
+                TIPO_EQUIPO: "EQUIPOS DE FRIO",
+                OBSERVACIONES: "Se reemplazan válvula solenoide, filtro deshidratador y válvula de expansión termostática. Se realiza vacío, carga con R507 y pruebas de marcha. Parámetros conformes.",
+                PDF_LINK: "https://drive.google.com/open?id=1_kokkKNqSicOx-5Q-wdC1FY4qeT1p9Oz"
+            },
+            {
+                FECHA: "30/05/2026 21:34:06",
+                EMPRESA: "USM VALPO",
+                EQUIPO: "MARMITA C.C.1.1 (ex C.C.1.4)",
+                TIPO_EQUIPO: "MARMITA",
+                OBSERVACIONES: "Se reemplaza regulador de gas defectuoso por uno nuevo, ajustando la presión a 18 mbar. Prueba de hermeticidad realizada conforme, sin escapes.",
+                PDF_LINK: "https://drive.google.com/open?id=1P_h5z7r0QpUmULoIKyhrcydUHEpg2nZP"
+            },
+            {
+                FECHA: "29/05/2026 14:06:20",
+                EMPRESA: "USM VALPO",
+                EQUIPO: "MARMITA C.C.1.1 (ex C.C.1.4)",
+                TIPO_EQUIPO: "MARMITA",
+                OBSERVACIONES: "Inspección por falla de encendido. Se detecta ausencia total de flujo de gas. Falla mecánica interna en el regulador de gas bloqueado y fuera de servicio técnico provisional.",
+                PDF_LINK: "https://drive.google.com/open?id=1Rja-aGLssPricG05viItDM5jG0JGtHYu"
+            },
+            {
+                FECHA: "29/05/2026 13:28:28",
+                EMPRESA: "USM VALPO",
+                EQUIPO: "SARTEN BASCULANTE C.C.4.1 (ex C.C.4.2)",
+                TIPO_EQUIPO: "SARTEN BASCULANTE",
+                OBSERVACIONES: "Se detecta fusible de alimentación quemado. Se reemplaza fusible, verificando voltajes y realizando pruebas operacionales satisfactorias.",
+                PDF_LINK: "https://drive.google.com/open?id=1oi5fyj_6gNBjKJ8EjF7xqrgq8L-SPLD2"
+            },
+            {
+                FECHA: "20/05/2026 15:50:56",
+                EMPRESA: "USM VALPO",
+                EQUIPO: "CÁMARA DE MANTENCIÓN C.C.8.1",
+                TIPO_EQUIPO: "EQUIPOS DE FRIO",
+                OBSERVACIONES: "Pérdida crítica de capacidad de frío. Válvula solenoide bloqueada y válvula de expansión trabada. Se sugiere apagado de seguridad, equipo queda fuera de servicio.",
+                PDF_LINK: "https://drive.google.com/open?id=1v2LacadkkXXRmDwWm0cEeRIMPiIf6Esx"
+            },
+            {
+                FECHA: "16/05/2026 21:04:06",
+                EMPRESA: "USM VIÑA CASINO",
+                EQUIPO: "MARMITA CC9.1",
+                TIPO_EQUIPO: "MARMITA",
+                OBSERVACIONES: "Suministro e instalación de chispero de encendido nuevo por ruptura del componente antiguo. Verificación de piloto conforme.",
+                PDF_LINK: "https://drive.google.com/open?id=1QoRNfQtH36p1cQHGRlPF7okceqt55J2Z"
+            },
+            {
+                FECHA: "16/05/2026 18:59:43",
+                EMPRESA: "USM VALPO",
+                EQUIPO: "COCINA C.C.5.1",
+                TIPO_EQUIPO: "COCINA A GAS",
+                OBSERVACIONES: "Se efectúa reemplazo de tramo de cañería de alimentación de ingreso debido a desgaste excesivo. Pruebas de fuga resultaron negativas.",
+                PDF_LINK: "https://drive.google.com/open?id=1quBTbOBT9d0qtb5Q20gRoyYVRyq9-x8r"
+            },
+            {
+                FECHA: "16/05/2026 18:56:22",
+                EMPRESA: "USM VALPO",
+                EQUIPO: "MARMITA C.C.1.2 (ex C.C.1.3)",
+                TIPO_EQUIPO: "MARMITA",
+                OBSERVACIONES: "Limpieza preventiva de quemadores de gas y calibración de termocupla de seguridad. Se constata correcto corte automático de seguridad.",
+                PDF_LINK: "https://drive.google.com/open?id=1MAYTKDQlfuIa_5tmUaR-MREUJLDehRkn"
+            },
+            {
+                FECHA: "16/05/2026 18:51:31",
+                EMPRESA: "USM VALPO",
+                EQUIPO: "MARMITA C.C.1.1 (ex C.C.1.4)",
+                TIPO_EQUIPO: "MARMITA",
+                OBSERVACIONES: "Limpieza de inyectores y desmonte preventivo de quemadores a gas. Verificación de hermeticidad de flexibles conforme.",
+                PDF_LINK: "https://drive.google.com/open?id=13MwGr4po_jGq8NybolUFe-se-zhhnwl0"
+            },
+            {
+                FECHA: "15/05/2026 19:30:00",
+                EMPRESA: "USM VALPO",
+                EQUIPO: "VISICOOLER DOS PUERTAS C.PR.8.1",
+                TIPO_EQUIPO: "EQUIPOS DE FRIO",
+                OBSERVACIONES: "Se detecta bajo nivel de refrigerante, por lo que se recarga gas R134a. Funcionamiento restaurado a óptimo.",
+                PDF_LINK: "https://drive.google.com/open?id=1mLO_MT5DZxk6U9Q4a-MndKEGlK-6rXTe"
+            },
+            {
+                FECHA: "15/05/2026 18:21:00",
+                EMPRESA: "USM VALPO",
+                EQUIPO: "VISICOOLER C.C.8.6 LINEA UNO",
+                TIPO_EQUIPO: "EQUIPOS DE FRIO",
+                OBSERVACIONES: "Limpieza a presión de condensador. Control operacional de termostato y luces. Consumo eléctrico nominal a 3.2 A.",
+                PDF_LINK: "https://drive.google.com/open?id=1LH0Uf1efFSd6x61TAxHNDWrfU21pOUcC"
+            },
+            {
+                FECHA: "15/05/2026 18:18:51",
+                EMPRESA: "USM VALPO",
+                EQUIPO: "BAÑO MARÍA C.C.7.1 LÍNEA 1",
+                TIPO_EQUIPO: "BAÑO MARIA",
+                OBSERVACIONES: "Se realiza desmonte e instalación de resistencia eléctrica nueva. Mediciones de corriente estables a 9.6 A.",
+                PDF_LINK: "https://drive.google.com/open?id=1QzkS3kdAdzABZfEEEqv2v8eLy4S7U3Gq"
+            },
+            {
+                FECHA: "15/04/2026 15:42:00",
+                EMPRESA: "ARTEMASA",
+                EQUIPO: "CHILLER 1",
+                TIPO_EQUIPO: "EQUIPOS DE FRIO",
+                OBSERVACIONES: "Mantenimiento preventivo. Limpieza profunda de intercambiador y serpentín. Control de protecciones eléctricas.",
+                PDF_LINK: "https://drive.google.com/open?id=1P5It5rDrhN95TH_EtYLbXcJblN7ZzftW"
+            },
+            {
+                FECHA: "16/03/2026 11:49:00",
+                EMPRESA: "ARTEMASA",
+                EQUIPO: "TUNEL 1",
+                TIPO_EQUIPO: "EQUIPOS DE FRIO",
+                OBSERVACIONES: "Inspección de túnel de congelados N°1. Se hace entrega de materiales de sellado para confección de piso.",
+                PDF_LINK: "https://drive.google.com/open?id=1NbQVeam-NnLZJoQOWB2k7NFk8Y39aYwS"
+            },
+            {
+                FECHA: "15/03/2026 15:40:00",
+                EMPRESA: "ARTEMASA",
+                EQUIPO: "CHILLER 1",
+                TIPO_EQUIPO: "EQUIPOS DE FRIO",
+                OBSERVACIONES: "Limpieza química de serpentines. Reapriete general de cableado eléctrico en contactores y protecciones.",
+                PDF_LINK: "https://drive.google.com/open?id=1_iID3pdKPPKIy3OzifqCX_uyU_pj4vKZ"
+            }
+        ];
+
+        // --- INSTANCIA GLOBAL DE VARIABLES DE ESTADO ---
+        let currentData = [...MOCK_DATA];
+        let filteredData = [...MOCK_DATA];
+        let filteredServices = [...MOCK_SERVICES];
+        let currentTab = 'resumen';
+        let charts = {};
+        let syncTimer = null;
+
+        // --- SISTEMA DE FILTRADO MULTI-PARAMÉTRICO GLOBAL (CROSS-FILTERING STATE) ---
+        let dashboardFilters = {
+            empresa: "",       // Seleccionado en dropdown o gráfico
+            tipoEquipo: "",    // Seleccionado en dropdown o gráfico
+            equipoNombre: "",  // Seleccionado en dropdown
+            marca: "",         // Seleccionado en gráfico o dropdown
+            ubicacion: "",     // Seleccionado en gráfico
+            fechaInicio: "",   // Campo de fecha inicial
+            fechaFin: ""       // Campo de fecha final
+        };
+
+        // --- PAGINACIÓN LISTADO INDEPENDIENTE EQUIPOS ---
+        let currentPageNum = 1;
+        const itemsPerPage = 8;
+
+        // --- AJUSTES POR DEFECTO ---
+        const DEFAULT_URL = 'https://docs.google.com/spreadsheets/d/1gyKKsGhOjvZpXLA9j1B_rei5Ql-Ur160LVVuNvoWypQ/edit?usp=sharing';
+        const DEFAULT_TAB = 'EQUIPOS';
+
+        let config = {
+            sheetUrl: DEFAULT_URL,
+            tabName: DEFAULT_TAB,
+            syncInterval: "10000",
+            autosync: true,
+            isUsingDemo: true
+        };
+
+        // --- INICIALIZACIÓN GENERAL ---
+        window.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            loadSavedConfig();
+            initCharts();
+            fetchSheetData();
+            
+            // Llenar menús de la Vista General
+            populateDashboardFilters();
+            applyDashboardFilters();
+
+            setupSyncSchedule();
+        });
+
+        // --- CONTROL DE NAVEGACIÓN (TABS) ---
+        function switchTab(tabId) {
+            currentTab = tabId;
+            
+            document.getElementById('tab-resumen').classList.add('hidden');
+            document.getElementById('tab-equipos').classList.add('hidden');
+            document.getElementById('tab-analisis').classList.add('hidden');
+            document.getElementById('tab-config').classList.add('hidden');
+
+            const navButtons = document.querySelectorAll('.tab-btn');
+            navButtons.forEach(btn => {
+                btn.classList.remove('bg-primary-600', 'text-white');
+                btn.classList.add('text-slate-400', 'hover:bg-slate-800', 'hover:text-white');
+            });
+
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+
+            const activeBtn = document.getElementById(`btn-${tabId}`);
+            if (activeBtn) {
+                activeBtn.classList.remove('text-slate-400', 'hover:bg-slate-800', 'hover:text-white');
+                activeBtn.classList.add('bg-primary-600', 'text-white');
+            }
+
+            let titleText = 'Vista General';
+            if (tabId === 'equipos') titleText = 'Inventario de Equipos';
+            if (tabId === 'analisis') titleText = 'Analítica y Estrategia';
+            if (tabId === 'config') titleText = 'Sincronización en Tiempo Real';
+            document.getElementById('current-tab-title').innerText = titleText;
+
+            // Forzar actualización de gráficos en caso de cambiar de pestaña para evitar fallas de renderizado
+            if (tabId === 'resumen') {
+                updateDashboardCharts();
+            } else if (tabId === 'analisis') {
+                calculateBusinessIntelligence();
+            }
+        }
+
+        // --- GESTIÓN DE CONFIGURACIÓN ---
+        function loadSavedConfig() {
+            const saved = localStorage.getItem('dashboard_config');
+            if (saved) {
+                try {
+                    config = JSON.parse(saved);
+                    document.getElementById('sheets-url-input').value = config.sheetUrl;
+                    document.getElementById('sheets-tab-input').value = config.tabName;
+                    document.getElementById('sync-interval').value = config.syncInterval;
+                    document.getElementById('autosync-toggle').checked = config.autosync;
+                } catch (e) {
+                    console.error("Error al cargar la configuración de caché", e);
+                }
+            } else {
+                document.getElementById('sheets-url-input').value = config.sheetUrl;
+                document.getElementById('sheets-tab-input').value = config.tabName;
+            }
+        }
+
+        function saveConfig() {
+            const urlInput = document.getElementById('sheets-url-input').value.trim();
+            const tabInput = document.getElementById('sheets-tab-input').value.trim();
+            const intervalInput = document.getElementById('sync-interval').value;
+            const autosyncInput = document.getElementById('autosync-toggle').checked;
+
+            if (!urlInput) {
+                showToast("Por favor, introduce una URL válida", "alert-triangle", "bg-amber-500 text-white");
+                return;
+            }
+
+            config.sheetUrl = urlInput;
+            config.tabName = tabInput || 'EQUIPOS';
+            config.syncInterval = intervalInput;
+            config.autosync = autosyncInput;
+            config.isUsingDemo = (urlInput === DEFAULT_URL);
+
+            localStorage.setItem('dashboard_config', JSON.stringify(config));
+            showToast("Configuración guardada. Sincronizando nuevos datos...", "save", "bg-emerald-600 text-white");
+
+            fetchSheetData();
+            setupSyncSchedule();
+        }
+
+        function restoreDefaults() {
+            document.getElementById('sheets-url-input').value = DEFAULT_URL;
+            document.getElementById('sheets-tab-input').value = DEFAULT_TAB;
+            document.getElementById('sync-interval').value = "10000";
+            document.getElementById('autosync-toggle').checked = true;
+            saveConfig();
+        }
+
+        // --- SISTEMA DE SINCRONIZACIÓN AUTOMÁTICA (TIEMPO REAL INVISIBLE) ---
+        function setupSyncSchedule() {
+            if (syncTimer) {
+                clearInterval(syncTimer);
+                syncTimer = null;
+            }
+
+            const intervalMs = parseInt(config.syncInterval);
+            const realtimeBadge = document.getElementById('realtime-badge');
+
+            if (config.autosync && intervalMs > 0) {
+                syncTimer = setInterval(() => {
+                    fetchSheetData(true); // Siempre en modo "silent" para que no cause parpadeo técnico
+                }, intervalMs);
+                realtimeBadge.classList.remove('hidden');
+            } else {
+                realtimeBadge.classList.add('hidden');
+            }
+        }
+
+        function toggleAutoSync(isActive) {
+            config.autosync = isActive;
+            localStorage.setItem('dashboard_config', JSON.stringify(config));
+            setupSyncSchedule();
+            showToast(isActive ? "Sincronización automática activada" : "Sincronización automática desactivada", "clock", "bg-slate-800 text-white");
+        }
+
+        // --- OBTENCION DE DATOS DESDE GOOGLE SHEETS ---
+        function fetchSheetData(silent = false) {
+            const syncIcon = document.getElementById('sync-icon');
+            if (syncIcon && !silent) {
+                syncIcon.classList.add('animate-spin');
+            }
+
+            let sheetId = "";
+            const url = config.sheetUrl;
+
+            const matches = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
+            if (matches && matches[1]) {
+                sheetId = matches[1];
+            }
+
+            if (!sheetId) {
+                useFallbackData("Enlace incorrecto. Cargados datos demo.");
+                return;
+            }
+
+            let queryUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(config.tabName)}`;
+            
+            if (url.includes('pub?output=csv') || url.includes('pub?gid=')) {
+                queryUrl = url;
+            }
+
+            fetch(queryUrl)
+                .then(response => {
+                    if (!response.ok) throw new Error('Error al conectar con el servidor de Google Sheets');
+                    return response.text();
+                })
+                .then(csvText => {
+                    Papa.parse(csvText, {
+                        header: true,
+                        skipEmptyLines: true,
+                        complete: function(results) {
+                            if (results.data && results.data.length > 0) {
+                                processIncomingData(results.data);
+                                updateSyncStatus(true);
+                                if (!silent) showToast("Datos Sincronizados", "refresh-cw", "bg-emerald-600 text-white");
+                            } else {
+                                throw new Error('Estructura de datos vacía');
+                            }
+                        },
+                        error: function(err) {
+                            throw new Error('No se pudo parsear el formato CSV');
+                        }
+                    });
+                })
+                .catch(error => {
+                    console.warn("Fetch fallido para Google Sheets. Usando base de datos alternativa local.", error.message);
+                    useFallbackData(error.message);
+                })
+                .finally(() => {
+                    if (syncIcon) {
+                        syncIcon.classList.remove('animate-spin');
+                    }
+                });
+        }
+
+        function useFallbackData(errorMsg) {
+            processIncomingData(MOCK_DATA);
+            updateSyncStatus(false, errorMsg);
+            document.getElementById('alert-banner').classList.remove('hidden');
+        }
+
+        // Procesar los datos recibidos y estandarizar las columnas con prevención de parpadeo
+        function processIncomingData(rawData) {
+            const normalizedData = rawData.map((row, index) => {
+                const getVal = (possibleKeys) => {
+                    for (let key of possibleKeys) {
+                        const foundKey = Object.keys(row).find(k => k.toLowerCase().replace(/_/g, " ").trim() === key.toLowerCase());
+                        if (foundKey) return row[foundKey];
+                    }
+                    return "";
+                };
+
+                return {
+                    ID_EQUIPO: getVal(['id equipo', 'id_equipo', 'id', 'id_eq']) || (index + 1),
+                    TIPO_EQUIPO: getVal(['tipo equipo', 'tipo_equipo', 'tipo', 'tipo_eq']) || 'OTROS',
+                    NOMBRE_EQUIPO: getVal(['nombre equipo', 'nombre_equipo', 'nombre', 'equipo']) || 'Equipo Genérico',
+                    MARCA: getVal(['marca']) || 'S/M',
+                    MODELO: getVal(['modelo']) || '',
+                    SERIE: getVal(['serie', 'n serie', 'n_serie']) || 'S/S',
+                    UBICACION: getVal(['ubicacion', 'ubicación', 'sector', 'local']) || 'ÁREA GENERAL',
+                    PERIODICIDAD: getVal(['periodicidad', 'periodicidad contratada', 'mantenimiento', 'estado']) || 'VIGENTE'
+                };
+            });
+
+            // PREVENCIÓN DE PARPADEO: Comparar estructura de datos actual mediante hash JSON antes de redibujar DOM
+            const oldHash = JSON.stringify(currentData);
+            const newHash = JSON.stringify(normalizedData);
+
+            if (oldHash === newHash && currentData.length > 0) {
+                // Si la base de datos de Google Sheet sigue igual, actualizamos estatus de conexión de forma invisible
+                updateSyncStatus(true);
+                return; 
+            }
+
+            // Si los datos son genuinamente nuevos, procedemos a refrescar de manera controlada
+            currentData = normalizedData;
+            
+            // Poblar selectores de filtro de la pestaña secundaria
+            populateSecondaryFilters();
+            
+            // Poblar selectores principales de la Vista General
+            populateDashboardFilters();
+
+            // Aplicar y refrescar toda la lógica
+            applyDashboardFilters();
+            
+            // Calcular inteligencia de negocios
+            calculateBusinessIntelligence();
+        }
+
+        // --- RELLENO DINÁMICO DE FILTROS EN LA VISTA GENERAL ---
+        function populateDashboardFilters() {
+            const fillSelect = (selectId, values, defaultText) => {
+                const select = document.getElementById(selectId);
+                if (!select) return;
+                const currVal = select.value;
+                select.innerHTML = `<option value="">${defaultText}</option>`;
+                values.forEach(val => {
+                    const opt = document.createElement('option');
+                    opt.value = val;
+                    opt.innerText = val;
+                    select.appendChild(opt);
+                });
+                if (values.includes(currVal)) select.value = currVal;
+            };
+
+            const empresas = [...new Set(MOCK_SERVICES.map(s => s.EMPRESA.trim()))].sort();
+            fillSelect('dash-filter-empresa', empresas, 'Todas las Empresas');
+
+            const tipos = [...new Set(currentData.map(e => e.TIPO_EQUIPO.trim()))].sort();
+            fillSelect('dash-filter-tipo', tipos, 'Todos los Tipos');
+
+            const nombres = [...new Set(currentData.map(e => e.NOMBRE_EQUIPO.trim()))].sort();
+            fillSelect('dash-filter-equipo-nombre', nombres, 'Todos los Equipos');
+        }
+
+        // --- SISTEMA INTEGRADOR DE FILTRADO DINÁMICO (VISTA GENERAL) ---
+        function handleDropdownFilterChange() {
+            dashboardFilters.empresa = document.getElementById('dash-filter-empresa').value;
+            dashboardFilters.tipoEquipo = document.getElementById('dash-filter-tipo').value;
+            dashboardFilters.equipoNombre = document.getElementById('dash-filter-equipo-nombre').value;
+            dashboardFilters.fechaInicio = document.getElementById('dash-filter-fecha-inicio').value;
+            dashboardFilters.fechaFin = document.getElementById('dash-filter-fecha-fin').value;
+
+            applyDashboardFilters();
+        }
+
+        // Aplicar filtros tanto en equipos como en servicios para CROSS-FILTERING sin parpadeos
+        function applyDashboardFilters() {
+            filteredData = currentData.filter(item => {
+                const matchTipo = !dashboardFilters.tipoEquipo || item.TIPO_EQUIPO === dashboardFilters.tipoEquipo;
+                const matchNombre = !dashboardFilters.equipoNombre || item.NOMBRE_EQUIPO === dashboardFilters.equipoNombre;
+                const matchMarca = !dashboardFilters.marca || item.MARCA === dashboardFilters.marca;
+                const matchUbi = !dashboardFilters.ubicacion || item.UBICACION === dashboardFilters.ubicacion;
+                
+                let matchEmpresa = true;
+                if (dashboardFilters.empresa) {
+                    const equiposDeEmpresa = MOCK_SERVICES
+                        .filter(s => s.EMPRESA === dashboardFilters.empresa)
+                        .map(s => s.EQUIPO.trim().toUpperCase());
+                    matchEmpresa = equiposDeEmpresa.includes(item.NOMBRE_EQUIPO.trim().toUpperCase());
+                }
+
+                return matchTipo && matchNombre && matchMarca && matchUbi && matchEmpresa;
+            });
+
+            filteredServices = MOCK_SERVICES.filter(service => {
+                const matchEmpresa = !dashboardFilters.empresa || service.EMPRESA === dashboardFilters.empresa;
+                const matchTipo = !dashboardFilters.tipoEquipo || service.TIPO_EQUIPO === dashboardFilters.tipoEquipo;
+                
+                let matchMarca = true;
+                if (dashboardFilters.marca) {
+                    const equipoRelacionado = currentData.find(e => e.NOMBRE_EQUIPO.trim().toUpperCase() === service.EQUIPO.trim().toUpperCase());
+                    matchMarca = equipoRelacionado ? (equipoRelacionado.MARCA === dashboardFilters.marca) : false;
+                }
+
+                let matchFecha = true;
+                if (service.FECHA && (dashboardFilters.fechaInicio || dashboardFilters.fechaFin)) {
+                    const servDate = parseServiceDate(service.FECHA);
+                    if (dashboardFilters.fechaInicio) {
+                        const startDate = new Date(dashboardFilters.fechaInicio + "T00:00:00");
+                        if (servDate < startDate) matchFecha = false;
+                    }
+                    if (dashboardFilters.fechaFin) {
+                        const endDate = new Date(dashboardFilters.fechaFin + "T23:59:59");
+                        if (servDate > endDate) matchFecha = false;
+                    }
+                }
+
+                return matchEmpresa && matchTipo && matchMarca && matchFecha;
+            });
+
+            // Sincronizar inputs visuales de la vista general
+            document.getElementById('dash-filter-empresa').value = dashboardFilters.empresa;
+            document.getElementById('dash-filter-tipo').value = dashboardFilters.tipoEquipo;
+            document.getElementById('dash-filter-equipo-nombre').value = dashboardFilters.equipoNombre;
+            document.getElementById('dash-filter-fecha-inicio').value = dashboardFilters.fechaInicio;
+            document.getElementById('dash-filter-fecha-fin').value = dashboardFilters.fechaFin;
+
+            renderActiveFilterBadges();
+            updateDashboardKPIs();
+            updateDashboardCharts();
+            renderDashboardServicesTable();
+            calculateBusinessIntelligence(); // Sincroniza la IA de analítica con tus filtros
+        }
+
+        // Parsear fecha en formato "DD/MM/YYYY HH:MM:SS"
+        function parseServiceDate(dateStr) {
+            try {
+                const parts = dateStr.split(' ');
+                const dateParts = parts[0].split('/');
+                return new Date(parseInt(dateParts[2]), parseInt(dateParts[1]) - 1, parseInt(dateParts[0]));
+            } catch(e) {
+                return new Date();
+            }
+        }
+
+        // Renderizar insignias de filtros aplicados
+        function renderActiveFilterBadges() {
+            const container = document.getElementById('active-badges-container');
+            const list = document.getElementById('active-badges-list');
+            if (!list) return;
+            list.innerHTML = '';
+
+            let hasFilters = false;
+
+            const addBadge = (key, val, label) => {
+                hasFilters = true;
+                const badge = document.createElement('div');
+                badge.className = "inline-flex items-center space-x-1.5 bg-sky-100 dark:bg-sky-950/40 text-primary-600 dark:text-sky-300 px-2.5 py-1 rounded-lg text-xs font-semibold border border-sky-200/50 dark:border-sky-900/30 animate-pulse";
+                badge.innerHTML = `
+                    <span>${label}: <strong class="text-sky-800 dark:text-sky-100">${val}</strong></span>
+                    <button onclick="clearSpecificFilter('${key}')" class="hover:text-rose-500 font-bold ml-1">✕</button>
+                `;
+                list.appendChild(badge);
+            };
+
+            if (dashboardFilters.empresa) addBadge('empresa', dashboardFilters.empresa, 'Empresa');
+            if (dashboardFilters.tipoEquipo) addBadge('tipoEquipo', dashboardFilters.tipoEquipo, 'Categoría');
+            if (dashboardFilters.equipoNombre) addBadge('equipoNombre', dashboardFilters.equipoNombre, 'Equipo');
+            if (dashboardFilters.marca) addBadge('marca', dashboardFilters.marca, 'Marca');
+            if (dashboardFilters.ubicacion) addBadge('ubicacion', dashboardFilters.ubicacion, 'Ubicación');
+            if (dashboardFilters.fechaInicio) addBadge('fechaInicio', dashboardFilters.fechaInicio, 'Desde');
+            if (dashboardFilters.fechaFin) addBadge('fechaFin', dashboardFilters.fechaFin, 'Hasta');
+
+            if (hasFilters) {
+                container.classList.remove('hidden');
+                container.classList.add('flex');
+            } else {
+                container.classList.add('hidden');
+                container.classList.remove('flex');
+            }
+        }
+
+        function clearSpecificFilter(key) {
+            dashboardFilters[key] = "";
+            applyDashboardFilters();
+        }
+
+        function resetDashboardFilters() {
+            dashboardFilters = {
+                empresa: "",
+                tipoEquipo: "",
+                equipoNombre: "",
+                marca: "",
+                ubicacion: "",
+                fechaInicio: "",
+                fechaFin: ""
+            };
+            applyDashboardFilters();
+            showToast("Filtros reestablecidos", "rotate-ccw", "bg-slate-800 text-white");
+        }
+
+        // --- REFRESCAR TARJETAS DE MÉTRICAS (KPIs ORIGINALMENTE REQUERIDOS) ---
+        function updateDashboardKPIs() {
+            // 1. Equipos con servicio en el mes (Mayo 2026)
+            // Filtramos servicios que correspondan a Mayo 2026 y contamos los equipos únicos
+            const serviciosMes = filteredServices.filter(s => s.FECHA.includes('/05/2026'));
+            const equiposUnicosMes = [...new Set(serviciosMes.map(s => s.EQUIPO.trim().toUpperCase()))].length;
+            document.getElementById('kpi-equipos-serviciados-mes').innerText = `${equiposUnicosMes} Equipos`;
+
+            // 2. Número de equipos operativos o en otras condiciones (baja / fuera contrato)
+            const totalEquipos = filteredData.length;
+            const deBaja = filteredData.filter(e => e.PERIODICIDAD.toUpperCase().includes('DE BAJA') || e.PERIODICIDAD.toUpperCase().includes('BAJA')).length;
+            const fueraContrato = filteredData.filter(e => e.PERIODICIDAD.toUpperCase().includes('FUERA CONTRATO') || e.PERIODICIDAD.toUpperCase().includes('FUERA')).length;
+            const operativos = totalEquipos - deBaja;
+
+            document.getElementById('kpi-equipos-operativos').innerText = `${operativos} / ${totalEquipos}`;
+            document.getElementById('kpi-equipos-operativos-sub').innerText = `${deBaja} de baja • ${fueraContrato} fuera contrato`;
+
+            // Helper para calcular líder de servicios
+            const obtenerLiderServicios = (listaServicios) => {
+                if (listaServicios.length === 0) return { nombre: "Sin Datos", count: 0 };
+                const counts = {};
+                listaServicios.forEach(s => {
+                    const emp = s.EMPRESA.trim();
+                    counts[emp] = (counts[emp] || 0) + 1;
+                });
+                let maxCount = 0;
+                let lider = "Sin Datos";
+                for (const emp in counts) {
+                    if (counts[emp] > maxCount) {
+                        maxCount = counts[emp];
+                        lider = emp;
+                    }
+                }
+                return { nombre: lider, count: maxCount };
+            };
+
+            // 3. Empresa con mayor número de servicios en el mes (Mayo 2026)
+            const liderMes = obtenerLiderServicios(serviciosMes);
+            document.getElementById('kpi-lider-servicios-mes').innerText = liderMes.nombre;
+            document.getElementById('kpi-lider-servicios-mes-sub').innerText = `${liderMes.count} servicios en Mayo`;
+
+            // 4. Empresa con mayor número de servicios en el año (2026)
+            const serviciosAnio = filteredServices.filter(s => s.FECHA.includes('/2026'));
+            const liderAnio = obtenerLiderServicios(serviciosAnio);
+            document.getElementById('kpi-lider-servicios-anio').innerText = liderAnio.nombre;
+            document.getElementById('kpi-lider-servicios-anio-sub').innerText = `${liderAnio.count} servicios en 2026`;
+        }
+
+        // --- TABLA DE SERVICIOS EN VISTA GENERAL ---
+        function renderDashboardServicesTable() {
+            const tableBody = document.getElementById('dash-services-table-body');
+            const noResults = document.getElementById('dash-services-no-results');
+            const countLabel = document.getElementById('dash-services-count');
+            
+            if (!tableBody) return;
+            tableBody.innerHTML = '';
+
+            countLabel.innerText = filteredServices.length;
+
+            if (filteredServices.length === 0) {
+                noResults.classList.remove('hidden');
+                return;
+            }
+
+            noResults.classList.add('hidden');
+
+            filteredServices.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors";
+
+                const isCritical = item.OBSERVACIONES.toLowerCase().includes('fuera de servicio') || 
+                                   item.OBSERVACIONES.toLowerCase().includes('inoperativo') || 
+                                   item.OBSERVACIONES.toLowerCase().includes('dañada') || 
+                                   item.OBSERVACIONES.toLowerCase().includes('crítica') ||
+                                   item.OBSERVACIONES.toLowerCase().includes('falla');
+                
+                const alertIndicator = isCritical ? `<span class="inline-block w-2.5 h-2.5 rounded-full bg-rose-500 mr-2 animate-ping" title="Falla crítica de operación"></span>` : '';
+
+                tr.innerHTML = `
+                    <td class="px-6 py-4 text-slate-500 dark:text-slate-400 font-semibold whitespace-nowrap">${item.FECHA}</td>
+                    <td class="px-6 py-4 font-bold text-slate-950 dark:text-white">${item.EMPRESA}</td>
+                    <td class="px-6 py-4 font-semibold text-slate-700 dark:text-slate-300">
+                        <span class="inline-flex items-center">
+                            ${alertIndicator}
+                            ${item.EQUIPO}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 text-slate-600 dark:text-slate-400 leading-relaxed max-w-md">${item.OBSERVACIONES}</td>
+                    <td class="px-6 py-4 whitespace-nowrap no-print">
+                        <a href="${item.PDF_LINK}" target="_blank" class="inline-flex items-center space-x-1.5 bg-rose-50 dark:bg-rose-950/20 hover:bg-rose-100 dark:hover:bg-rose-950/40 text-rose-600 dark:text-rose-400 px-3.5 py-2 rounded-xl text-xs font-bold transition-all border border-rose-100 dark:border-rose-950/30">
+                            <i data-lucide="file-text" class="w-3.5 h-3.5"></i>
+                            <span>Ver PDF</span>
+                        </a>
+                    </td>
+                `;
+                tableBody.appendChild(tr);
+            });
+
+            lucide.createIcons();
+        }
+
+        // --- CÁLCULO DE INTELIGENCIA DE NEGOCIOS Y ANALÍTICA ---
+        function calculateBusinessIntelligence() {
+            // 1. Servicios totales del mes actual (Mayo 2026)
+            const mayo2026Services = filteredServices.filter(s => s.FECHA.includes('/05/2026'));
+            document.getElementById('analisis-servicios-mes').innerText = mayo2026Services.length;
+
+            // 2. Tasa de criticidad del mes
+            const criticalServices = filteredServices.filter(s => 
+                s.OBSERVACIONES.toLowerCase().includes('fuera de servicio') || 
+                s.OBSERVACIONES.toLowerCase().includes('inoperativo') ||
+                s.OBSERVACIONES.toLowerCase().includes('crítica')
+            );
+            const rate = filteredServices.length > 0 ? Math.round((criticalServices.length / filteredServices.length) * 100) : 0;
+            document.getElementById('analisis-tasa-criticidad').innerText = `${rate}%`;
+
+            // 3. Cuello de botella: Identificar el equipo que más se repite en servicios correctivos
+            const counter = {};
+            let maxCount = 0;
+            let bottleneck = "Ninguno Detectado";
+
+            filteredServices.forEach(s => {
+                counter[s.EQUIPO] = (counter[s.EQUIPO] || 0) + 1;
+                if (counter[s.EQUIPO] > maxCount) {
+                    maxCount = counter[s.EQUIPO];
+                    bottleneck = s.EQUIPO;
+                }
+            });
+
+            document.getElementById('analisis-cuello-botella').innerText = maxCount > 0 ? `${bottleneck} (${maxCount} fallas)` : "Estable";
+        }
+
+        // --- CREACIÓN E INICIALIZACIÓN DE GRÁFICOS (CHART.JS) ---
+        function initCharts() {
+            Chart.defaults.font.family = "'Inter', sans-serif";
+            Chart.defaults.color = '#94a3b8'; 
+
+            const makeInteractive = (chartId, filterKey) => {
+                return {
+                    onClick: (event, elements, chart) => {
+                        if (elements && elements.length > 0) {
+                            const index = elements[0].index;
+                            const label = chart.data.labels[index];
+                            
+                            if (dashboardFilters[filterKey] === label) {
+                                dashboardFilters[filterKey] = "";
+                                showToast(`Filtro de ${filterKey} removido`, "filter-x", "bg-slate-800 text-white");
+                            } else {
+                                dashboardFilters[filterKey] = label;
+                                showToast(`Filtrado por: ${label}`, "filter", "bg-sky-600 text-white");
+                            }
+                            applyDashboardFilters();
+                        }
+                    }
+                };
+            };
+
+            // 1. Equipos por Tipo (Bar)
+            const ctxTipos = document.getElementById('chart-tipos').getContext('2d');
+            charts.tipos = new Chart(ctxTipos, {
+                type: 'bar',
+                data: { labels: [], datasets: [] },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: 'rgba(148, 163, 184, 0.1)' } },
+                        x: { grid: { display: false } }
+                    },
+                    ...makeInteractive('chart-tipos', 'tipoEquipo')
+                }
+            });
+
+            // 2. Marcas Principales (Horizontal Bar)
+            const ctxMarcas = document.getElementById('chart-marcas').getContext('2d');
+            charts.marcas = new Chart(ctxMarcas, {
+                type: 'bar',
+                data: { labels: [], datasets: [] },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { beginAtZero: true, grid: { color: 'rgba(148, 163, 184, 0.1)' } },
+                        y: { grid: { display: false } }
+                    },
+                    ...makeInteractive('chart-marcas', 'marca')
+                }
+            });
+
+            // 3. Ubicaciones (Donut)
+            const ctxUbicaciones = document.getElementById('chart-ubicaciones').getContext('2d');
+            charts.ubicaciones = new Chart(ctxUbicaciones, {
+                type: 'doughnut',
+                data: { labels: [], datasets: [] },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { boxWidth: 12, padding: 15 } }
+                    },
+                    cutout: '65%',
+                    ...makeInteractive('chart-ubicaciones', 'ubicacion')
+                }
+            });
+
+            // 4. Estado de Mantenimiento / Periodicidad (Line)
+            const ctxPeriodicidad = document.getElementById('chart-periodicidades').getContext('2d');
+            charts.periodicidad = new Chart(ctxPeriodicidad, {
+                type: 'line',
+                data: { labels: [], datasets: [] },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: 'rgba(148, 163, 184, 0.1)' } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+
+            // 5. Servicios por Empresa (Doughnut)
+            const ctxServEmpresa = document.getElementById('chart-servicios-empresa').getContext('2d');
+            charts.servEmpresa = new Chart(ctxServEmpresa, {
+                type: 'doughnut',
+                data: { labels: [], datasets: [] },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { boxWidth: 12, padding: 15 } }
+                    },
+                    cutout: '50%',
+                    ...makeInteractive('chart-servicios-empresa', 'empresa')
+                }
+            });
+
+            // 6. Servicios por Tipo de Equipo (Bar)
+            const ctxServEquipo = document.getElementById('chart-servicios-equipo').getContext('2d');
+            charts.servEquipo = new Chart(ctxServEquipo, {
+                type: 'bar',
+                data: { labels: [], datasets: [] },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: 'rgba(148, 163, 184, 0.1)' } },
+                        x: { grid: { display: false } }
+                    },
+                    ...makeInteractive('chart-servicios-equipo', 'tipoEquipo')
+                }
+            });
+        }
+
+        // --- ACTUALIZACIÓN DINÁMICA DE GRÁFICOS (CHART.JS) ---
+        function updateDashboardCharts() {
+            if (!charts.tipos) return;
+
+            const getCounts = (dataset, propertyName) => {
+                const counts = {};
+                dataset.forEach(item => {
+                    const val = item[propertyName] ? item[propertyName].trim() : 'Otros';
+                    counts[val] = (counts[val] || 0) + 1;
+                });
+                return counts;
+            };
+
+            // 1. Gráfico Tipos de Equipos
+            const tipoCounts = getCounts(filteredData, 'TIPO_EQUIPO');
+            const sortedTipos = Object.entries(tipoCounts).sort((a,b) => b[1] - a[1]);
+            charts.tipos.data.labels = sortedTipos.map(x => x[0]);
+            charts.tipos.data.datasets = [{
+                label: 'Equipos',
+                data: sortedTipos.map(x => x[1]),
+                backgroundColor: sortedTipos.map(x => x[0] === dashboardFilters.tipoEquipo ? '#0284c7' : 'rgba(14, 165, 233, 0.8)'),
+                borderRadius: 8
+            }];
+            charts.tipos.update('active'); // Método 'active' actualiza sin animaciones bruscas ni parpadeos
+
+            // 2. Gráfico Marcas
+            const marcaCounts = getCounts(filteredData, 'MARCA');
+            const sortedMarcas = Object.entries(marcaCounts).sort((a,b) => b[1] - a[1]).slice(0, 7);
+            charts.marcas.data.labels = sortedMarcas.map(x => x[0]);
+            charts.marcas.data.datasets = [{
+                label: 'Equipos',
+                data: sortedMarcas.map(x => x[1]),
+                backgroundColor: sortedMarcas.map(x => x[0] === dashboardFilters.marca ? '#7c3aed' : 'rgba(139, 92, 246, 0.8)'),
+                borderRadius: 8
+            }];
+            charts.marcas.update('active');
+
+            // 3. Gráfico Ubicaciones
+            const ubiCounts = getCounts(filteredData, 'UBICACION');
+            const sortedUbi = Object.entries(ubiCounts).sort((a,b) => b[1] - a[1]);
+            charts.ubicaciones.data.labels = sortedUbi.map(x => x[0]);
+            charts.ubicaciones.data.datasets = [{
+                data: sortedUbi.map(x => x[1]),
+                backgroundColor: ['#0ea5e9', '#10b981', '#f59e0b', '#6366f1', '#ec4899', '#f43f5e'],
+                borderWidth: 2,
+                borderColor: document.documentElement.classList.contains('dark') ? '#020617' : '#ffffff'
+            }];
+            charts.ubicaciones.update('active');
+
+            // 4. Gráfico Periodicidad
+            const periodCounts = getCounts(filteredData, 'PERIODICIDAD');
+            const sortedPeriod = Object.entries(periodCounts).sort((a,b) => b[1] - a[1]);
+            charts.periodicidad.data.labels = sortedPeriod.map(x => x[0]);
+            charts.periodicidad.data.datasets = [{
+                label: 'Equipos',
+                data: sortedPeriod.map(x => x[1]),
+                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                borderColor: '#10b981',
+                borderWidth: 3,
+                tension: 0.3,
+                fill: true,
+                pointBackgroundColor: '#10b981'
+            }];
+            charts.periodicidad.update('active');
+
+            // 5. Gráfico de Servicios por Empresa
+            const servEmpCounts = getCounts(filteredServices, 'EMPRESA');
+            const sortedServEmp = Object.entries(servEmpCounts).sort((a,b) => b[1] - a[1]);
+            charts.servEmpresa.data.labels = sortedServEmp.map(x => x[0]);
+            charts.servEmpresa.data.datasets = [{
+                data: sortedServEmp.map(x => x[1]),
+                backgroundColor: ['#3b82f6', '#f59e0b', '#10b981', '#ec4899', '#8b5cf6'],
+                borderWidth: 2,
+                borderColor: document.documentElement.classList.contains('dark') ? '#020617' : '#ffffff'
+            }];
+            charts.servEmpresa.update('active');
+
+            // 6. Gráfico de Servicios por Tipo de Equipo
+            const servTipoCounts = getCounts(filteredServices, 'TIPO_EQUIPO');
+            const sortedServTipo = Object.entries(servTipoCounts).sort((a,b) => b[1] - a[1]);
+            charts.servEquipo.data.labels = sortedServTipo.map(x => x[0]);
+            charts.servEquipo.data.datasets = [{
+                label: 'Servicios',
+                data: sortedServTipo.map(x => x[1]),
+                backgroundColor: sortedServTipo.map(x => x[0] === dashboardFilters.tipoEquipo ? '#10b981' : 'rgba(16, 185, 129, 0.85)'),
+                borderRadius: 8
+            }];
+            charts.servEquipo.update('active');
+        }
+
+        // --- EXPORTAR REPORTES PDF ---
+        function exportDashboardPDF() {
+            const printDateSpan = document.getElementById('print-date');
+            if (printDateSpan) {
+                const now = new Date();
+                printDateSpan.innerText = now.toLocaleString();
+            }
+            window.print();
+        }
+
+        // --- PESTAÑA INVENTARIO (DETALLE ADICIONAL) ---
+        function populateSecondaryFilters() {
+            const populate = (elementId, propertyName, label) => {
+                const select = document.getElementById(elementId);
+                if (!select) return;
+                const currentValue = select.value;
+                const uniqueValues = [...new Set(currentData.map(item => item[propertyName].trim()))].filter(Boolean).sort();
+                
+                select.innerHTML = `<option value="">${label}</option>`;
+                uniqueValues.forEach(val => {
+                    const option = document.createElement('option');
+                    option.value = val;
+                    option.className = "bg-white dark:bg-slate-900";
+                    option.innerText = val;
+                    select.appendChild(option);
+                });
+
+                if (uniqueValues.includes(currentValue)) {
+                    select.value = currentValue;
+                }
+            };
+
+            populate('filter-tipo', 'TIPO_EQUIPO', 'Todos los Tipos');
+            populate('filter-marca', 'MARCA', 'Todas las Marcas');
+            populate('filter-ubicacion', 'UBICACION', 'Todas las Ubicaciones');
+            populate('filter-periodicidad', 'PERIODICIDAD', 'Cualquier Periodicidad');
+        }
+
+        function filterData() {
+            const searchQuery = document.getElementById('search-input').value.toLowerCase().trim();
+            const tipoFilter = document.getElementById('filter-tipo').value;
+            const marcaFilter = document.getElementById('filter-marca').value;
+            const ubicacionFilter = document.getElementById('filter-ubicacion').value;
+            const periodicidadFilter = document.getElementById('filter-periodicidad').value;
+
+            filteredData = currentData.filter(item => {
+                const matchSearch = searchQuery === "" || 
+                    item.ID_EQUIPO.toString().toLowerCase().includes(searchQuery) ||
+                    item.NOMBRE_EQUIPO.toLowerCase().includes(searchQuery) ||
+                    item.SERIE.toLowerCase().includes(searchQuery) ||
+                    item.MODELO.toLowerCase().includes(searchQuery);
+
+                const matchTipo = tipoFilter === "" || item.TIPO_EQUIPO === tipoFilter;
+                const matchMarca = marcaFilter === "" || item.MARCA === marcaFilter;
+                const matchUbicacion = ubicacionFilter === "" || item.UBICACION === ubicacionFilter;
+                const matchPeriodicidad = periodicidadFilter === "" || item.PERIODICIDAD === periodicidadFilter;
+
+                return matchSearch && matchTipo && matchMarca && matchUbicacion && matchPeriodicidad;
+            });
+
+            currentPageNum = 1;
+            renderTable();
+        }
+
+        function renderTable() {
+            const tableBody = document.getElementById('equipos-table-body');
+            const noResultsMsg = document.getElementById('no-results-msg');
+            if (!tableBody) return;
+            tableBody.innerHTML = '';
+
+            const totalCount = filteredData.length;
+            document.getElementById('table-total-count').innerText = currentData.length;
+
+            if (totalCount === 0) {
+                noResultsMsg.classList.remove('hidden');
+                document.getElementById('table-showing-count').innerText = 0;
+                document.getElementById('current-page').innerText = 1;
+                document.getElementById('btn-prev-page').disabled = true;
+                document.getElementById('btn-next-page').disabled = true;
+                return;
+            }
+
+            noResultsMsg.classList.add('hidden');
+
+            const startIndex = (currentPageNum - 1) * itemsPerPage;
+            const endIndex = Math.min(startIndex + itemsPerPage, totalCount);
+            const paginatedItems = filteredData.slice(startIndex, endIndex);
+
+            document.getElementById('table-showing-count').innerText = filteredData.length;
+            document.getElementById('current-page').innerText = currentPageNum;
+
+            document.getElementById('btn-prev-page').disabled = (currentPageNum === 1);
+            document.getElementById('btn-next-page').disabled = (endIndex >= totalCount);
+
+            paginatedItems.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors";
+
+                let badgeClass = "bg-sky-100 text-sky-800 dark:bg-sky-900/30 dark:text-sky-300";
+                const pUpper = item.PERIODICIDAD.toUpperCase();
+                if (pUpper.includes('TRIMESTRAL') || pUpper.includes('BIMESTRAL') || pUpper.includes('MENSUAL')) {
+                    badgeClass = "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300";
+                } else if (pUpper.includes('DE BAJA') || pUpper.includes('BAJA')) {
+                    badgeClass = "bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-300";
+                } else if (pUpper.includes('FUERA CONTRATO') || pUpper.includes('FUERA')) {
+                    badgeClass = "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300";
+                } else if (pUpper.includes('SEMESTRAL')) {
+                    badgeClass = "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300";
+                }
+
+                tr.innerHTML = `
+                    <td class="px-6 py-4 font-mono font-semibold text-slate-500">${item.ID_EQUIPO}</td>
+                    <td class="px-6 py-4 font-semibold text-slate-900 dark:text-white">${item.NOMBRE_EQUIPO}</td>
+                    <td class="px-6 py-4">
+                        <span class="px-2 py-1 text-xs font-semibold rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">${item.TIPO_EQUIPO}</span>
+                    </td>
+                    <td class="px-6 py-4 text-slate-500 dark:text-slate-400 font-medium">${item.UBICACION}</td>
+                    <td class="px-6 py-4">
+                        <div class="font-medium text-slate-900 dark:text-white">${item.MARCA}</div>
+                        <div class="text-xs text-slate-400">${item.MODELO || '-'}</div>
+                    </td>
+                    <td class="px-6 py-4 font-mono text-xs text-slate-500">${item.SERIE || '-'}</td>
+                    <td class="px-6 py-4">
+                        <span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold ${badgeClass}">
+                            ${item.PERIODICIDAD}
+                        </span>
+                    </td>
+                `;
+                tableBody.appendChild(tr);
+            });
+        }
+
+        function resetFilters() {
+            document.getElementById('search-input').value = "";
+            document.getElementById('filter-tipo').value = "";
+            document.getElementById('filter-marca').value = "";
+            document.getElementById('filter-ubicacion').value = "";
+            document.getElementById('filter-periodicidad').value = "";
+            filterData();
+            showToast("Filtros de equipos restablecidos", "rotate-ccw", "bg-slate-800 text-white");
+        }
+
+        function prevPage() {
+            if (currentPageNum > 1) {
+                currentPageNum--;
+                renderTable();
+            }
+        }
+
+        function nextPage() {
+            if ((currentPageNum * itemsPerPage) < filteredData.length) {
+                currentPageNum++;
+                renderTable();
+            }
+        }
+
+        // --- CONTROL DE TEMA ---
+        function toggleDarkMode() {
+            const html = document.documentElement;
+            const sunIcon = document.getElementById('sun-icon');
+            const moonIcon = document.getElementById('moon-icon');
+
+            if (html.classList.contains('dark')) {
+                html.classList.remove('dark');
+                sunIcon.classList.add('hidden');
+                moonIcon.classList.remove('hidden');
+                localStorage.setItem('theme', 'light');
+            } else {
+                html.classList.add('dark');
+                sunIcon.classList.remove('hidden');
+                moonIcon.classList.add('hidden');
+                localStorage.setItem('theme', 'dark');
+            }
+
+            if (charts.ubicaciones) {
+                const borderCol = html.classList.contains('dark') ? '#020617' : '#ffffff';
+                charts.ubicaciones.data.datasets[0].borderColor = borderCol;
+                charts.ubicaciones.update();
+                charts.servEmpresa.data.datasets[0].borderColor = borderCol;
+                charts.servEmpresa.update();
+            }
+        }
+
+        const userTheme = localStorage.getItem('theme');
+        const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (userTheme === 'dark' || (!userTheme && systemTheme)) {
+            document.documentElement.classList.add('dark');
+            document.getElementById('sun-icon').classList.remove('hidden');
+            document.getElementById('moon-icon').classList.add('hidden');
+        }
+
+        // --- ACTUALIZACIÓN DE ESTADO Y TIMESTAMPS ---
+        function updateSyncStatus(isSuccess, errorMessage = "") {
+            const dot = document.getElementById('sync-dot');
+            const label = document.getElementById('sync-status');
+            const timeLabel = document.getElementById('last-update-time');
+            const alertBanner = document.getElementById('alert-banner');
+
+            const now = new Date();
+            const timeString = now.toLocaleTimeString();
+
+            timeLabel.innerText = timeString;
+
+            if (isSuccess) {
+                dot.firstElementChild.className = "animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75";
+                dot.lastElementChild.className = "relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500";
+                
+                if (config.isUsingDemo) {
+                    label.innerText = "Modo Demo Activo";
+                    label.className = "text-xs font-semibold text-amber-500";
+                    alertBanner.classList.remove('hidden');
+                } else {
+                    label.innerText = "Sincronizado con Sheets";
+                    label.className = "text-xs font-semibold text-emerald-400";
+                    alertBanner.classList.add('hidden');
+                }
+            } else {
+                dot.firstElementChild.className = "absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75 animate-pulse";
+                dot.lastElementChild.className = "relative inline-flex rounded-full h-3.5 w-3.5 bg-rose-500";
+                label.innerText = "Error / Usando Caché";
+                label.className = "text-xs font-semibold text-rose-400";
+                
+                document.getElementById('alert-message').innerText = `Error: ${errorMessage || 'No se puede conectar a Google Sheets'}. Comprueba los permisos de compartición.`;
+                alertBanner.classList.remove('hidden');
+            }
+        }
+
+        // --- NOTIFICACIONES TOAST ---
+        function showToast(message, iconName, bgClass = "bg-slate-900 text-white") {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toast-message');
+            const iconContainer = document.getElementById('toast-icon-container');
+            
+            toastMsg.innerText = message;
+            toast.className = `fixed bottom-5 right-5 z-50 px-5 py-3.5 rounded-xl shadow-xl flex items-center space-x-3 max-w-md transform transition-all duration-300 ${bgClass}`;
+            
+            iconContainer.innerHTML = `<i data-lucide="${iconName}" class="w-4 h-4"></i>`;
+            lucide.createIcons();
+
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+                toast.classList.remove('translate-y-0', 'opacity-100');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
