@@ -91,8 +91,11 @@
 <body class="h-full text-slate-800 dark:text-slate-100 transition-colors duration-200">
     <div class="min-h-full flex flex-col md:flex-row">
         
-        <!-- SIDEBAR DE NAVEGACIÓN (Oculto en Impresión/PDF) -->
-        <aside class="w-full md:w-64 bg-slate-900 text-slate-100 flex-shrink-0 flex flex-col border-r border-slate-800 no-print">
+        <!-- BACKDROP de la barra lateral (al abrirla en modo overlay) -->
+        <div id="sidebar-backdrop" onclick="closeSidebar()" class="hidden fixed inset-0 bg-black/50 z-40 no-print"></div>
+
+        <!-- SIDEBAR DE NAVEGACIÓN (overlay, se oculta automáticamente) -->
+        <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 text-slate-100 flex flex-col border-r border-slate-800 no-print transform -translate-x-full transition-transform duration-300">
             <!-- Header Sidebar -->
             <div class="p-6 border-b border-slate-800 flex items-center justify-between">
                 <div class="flex items-center space-x-3">
@@ -104,6 +107,9 @@
                         <span class="text-xs text-slate-400">Control de Equipos</span>
                     </div>
                 </div>
+                <button onclick="closeSidebar()" title="Cerrar menú" class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-all">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
             </div>
             
             <!-- Links de Navegación -->
@@ -161,6 +167,9 @@
             <!-- TOP NAVBAR (Oculto en Impresión/PDF) -->
             <header class="bg-white dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 px-6 py-4 flex items-center justify-between no-print">
                 <div class="flex items-center space-x-4">
+                    <button onclick="toggleSidebar()" title="Menú" class="p-2 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white rounded-lg bg-slate-100 dark:bg-slate-800 transition-all">
+                        <i data-lucide="menu" class="w-5 h-5"></i>
+                    </button>
                     <h2 id="current-tab-title" class="text-xl font-bold text-slate-900 dark:text-white">Vista General</h2>
                     <span id="realtime-badge" class="hidden px-2.5 py-0.5 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
                         <span class="inline-block w-1.5 h-1.5 bg-blue-600 dark:bg-blue-400 rounded-full mr-1.5 animate-pulse"></span>
@@ -440,17 +449,24 @@
                         </div>
                         
                         <div class="overflow-x-auto">
-                            <table class="w-full text-left border-collapse text-sm">
+                            <table class="w-full text-left border-collapse text-sm table-fixed">
+                                <colgroup>
+                                    <col class="w-[120px]">
+                                    <col class="w-[16%]">
+                                    <col class="w-[20%]">
+                                    <col>
+                                    <col class="w-[110px]">
+                                </colgroup>
                                 <thead>
                                     <tr class="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 text-slate-500 text-xs font-semibold uppercase tracking-wider">
-                                        <th class="px-6 py-4">Fecha</th>
-                                        <th class="px-6 py-4">Empresa / Cliente</th>
-                                        <th class="px-6 py-4">Equipo Intervenido</th>
-                                        <th class="px-6 py-4">Detalles del Servicio / Observaciones</th>
-                                        <th class="px-6 py-4 no-print">Informe</th>
+                                        <th class="px-4 py-3">Fecha</th>
+                                        <th class="px-4 py-3">Empresa / Cliente</th>
+                                        <th class="px-4 py-3">Equipo Intervenido</th>
+                                        <th class="px-4 py-3">Observaciones</th>
+                                        <th class="px-4 py-3 no-print">Informe</th>
                                     </tr>
                                 </thead>
-                                <tbody id="dash-services-table-body" class="divide-y divide-slate-200 dark:divide-slate-800">
+                                <tbody id="dash-services-table-body" class="divide-y divide-slate-200 dark:divide-slate-800 align-top">
                                     <!-- Se inyecta dinámicamente con JS -->
                                 </tbody>
                             </table>
@@ -699,6 +715,12 @@
                                     </div>
                                 </div>
 
+                                <div class="space-y-1">
+                                    <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300">Clave API de Google Drive (opcional, para abrir PDF de servicios nuevos):</label>
+                                    <input type="text" id="drive-apikey-input" class="w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500" placeholder="AIza...">
+                                    <p class="text-[11px] text-slate-400">Con la carpeta REPORTES_ARG pública y esta clave, el dashboard busca el ID del PDF de cada servicio nuevo y lo abre directo. Sin clave, usa el índice precargado y, si no está, una búsqueda en Drive.</p>
+                                </div>
+
                                 <div class="flex items-center space-x-2 pt-2">
                                     <input type="checkbox" id="autosync-toggle" checked onchange="toggleAutoSync(this.checked)" class="w-4.5 h-4.5 text-primary-600 border-slate-300 rounded focus:ring-primary-500">
                                     <label for="autosync-toggle" class="text-sm font-medium text-slate-700 dark:text-slate-300">Activar actualización continua en segundo plano</label>
@@ -744,7 +766,7 @@
     </div>
 
     <!-- NOTIFICACIONES TOAST (Sustituto Premium de Alert) -->
-    <div id="toast" class="fixed bottom-5 right-5 z-50 bg-slate-900 text-white dark:bg-white dark:text-slate-900 px-5 py-3.5 rounded-xl shadow-xl flex items-center space-x-3 max-w-md transform translate-y-20 opacity-0 transition-all duration-300">
+    <div id="toast" class="fixed bottom-20 right-5 z-50 bg-slate-900 text-white dark:bg-white dark:text-slate-900 px-5 py-3.5 rounded-xl shadow-xl flex items-center space-x-3 max-w-md transform translate-y-20 opacity-0 transition-all duration-300">
         <div id="toast-icon-container" class="p-1 rounded-full bg-emerald-500/20 text-emerald-500">
             <i data-lucide="check" class="w-4 h-4" id="toast-icon"></i>
         </div>
@@ -752,7 +774,7 @@
     </div>
 
     <!-- BOTÓN VOLVER ARRIBA (aparece al bajar en la pantalla) -->
-    <button id="back-to-top" onclick="scrollDashboardToTop()" title="Volver arriba" class="hidden no-print fixed bottom-5 left-5 z-50 bg-primary-600 hover:bg-primary-700 text-white p-3 rounded-full shadow-xl transition-all">
+    <button id="back-to-top" onclick="scrollDashboardToTop()" title="Volver arriba" class="hidden no-print fixed bottom-5 right-5 z-50 bg-primary-600 hover:bg-primary-700 text-white p-3 rounded-full shadow-xl transition-all">
         <i data-lucide="arrow-up" class="w-5 h-5"></i>
     </button>
 
@@ -1418,10 +1440,14 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
             sheetUrl: DEFAULT_URL,
             tabName: DEFAULT_TAB,
             serviceTabName: DEFAULT_SERVICE_TAB,
+            driveApiKey: "",
             syncInterval: "60000",
             autosync: true,
             isUsingDemo: true
         };
+
+        // Carpeta de Drive con los informes (REPORTES_ARG)
+        const REPORTES_FOLDER_ID = '1v2RHdEfAvEN1NlX-Jmct3sTFh23UlP00';
 
         // --- INICIALIZACIÓN GENERAL ---
         window.addEventListener('DOMContentLoaded', () => {
@@ -1474,6 +1500,25 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
             if (sc) sc.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
+        // --- BARRA LATERAL (overlay que se oculta automáticamente) ---
+        function openSidebar() {
+            const sb = document.getElementById('sidebar');
+            const bd = document.getElementById('sidebar-backdrop');
+            if (sb) sb.classList.remove('-translate-x-full');
+            if (bd) bd.classList.remove('hidden');
+        }
+        function closeSidebar() {
+            const sb = document.getElementById('sidebar');
+            const bd = document.getElementById('sidebar-backdrop');
+            if (sb) sb.classList.add('-translate-x-full');
+            if (bd) bd.classList.add('hidden');
+        }
+        function toggleSidebar() {
+            const sb = document.getElementById('sidebar');
+            if (sb && sb.classList.contains('-translate-x-full')) openSidebar();
+            else closeSidebar();
+        }
+
         // --- CARGA PREVIA: INVENTARIO BASE DESDE EL CSV EMBEBIDO ---
         function loadBaselineData() {
             try {
@@ -1495,7 +1540,8 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
         // --- CONTROL DE NAVEGACIÓN (TABS) ---
         function switchTab(tabId) {
             currentTab = tabId;
-            
+            closeSidebar(); // la barra lateral se oculta automáticamente al elegir una sección
+
             document.getElementById('tab-resumen').classList.add('hidden');
             document.getElementById('tab-equipos').classList.add('hidden');
             document.getElementById('tab-analisis').classList.add('hidden');
@@ -1544,6 +1590,7 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
             document.getElementById('sheets-url-input').value = config.sheetUrl || DEFAULT_URL;
             document.getElementById('sheets-tab-input').value = config.tabName || DEFAULT_TAB;
             document.getElementById('sheets-service-tab-input').value = config.serviceTabName || DEFAULT_SERVICE_TAB;
+            document.getElementById('drive-apikey-input').value = config.driveApiKey || "";
             document.getElementById('sync-interval').value = config.syncInterval || "60000";
             document.getElementById('autosync-toggle').checked = config.autosync !== false;
         }
@@ -1576,6 +1623,7 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
             const urlInput = document.getElementById('sheets-url-input').value.trim();
             const tabInput = document.getElementById('sheets-tab-input').value.trim();
             const serviceTabInput = document.getElementById('sheets-service-tab-input').value.trim();
+            const apiKeyInput = document.getElementById('drive-apikey-input').value.trim();
             const intervalInput = document.getElementById('sync-interval').value;
             const autosyncInput = document.getElementById('autosync-toggle').checked;
 
@@ -1587,6 +1635,7 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
             config.sheetUrl = urlInput;
             config.tabName = tabInput || DEFAULT_TAB;
             config.serviceTabName = serviceTabInput || DEFAULT_SERVICE_TAB;
+            config.driveApiKey = apiKeyInput;
             config.syncInterval = intervalInput;
             config.autosync = autosyncInput;
             config.isUsingDemo = (urlInput === DEFAULT_URL);
@@ -1865,12 +1914,12 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
                     nombreEquipo = tipoEquipo;
                 }
 
-                // Observaciones: combinar tareas realizadas + observaciones generales
-                const tareas = getVal(['tareas', 'trabajo realizado', 'detalle', 'detalles', 'descripcion', 'descripción', 'diagnostico', 'diagnóstico']);
-                const obsGen = getVal(['informar observaciones generales', 'observaciones generales', 'observaciones', 'observacion', 'observación', 'detalles del servicio']);
+                // Observaciones: SOLO "informar observaciones generales" (no incluye TAREAS)
+                const tareas = getVal(['tareas', 'trabajo realizado']);
+                const obsGen = getVal(['informar observaciones generales', 'observaciones generales', 'observaciones', 'observacion', 'observación']);
                 const estado = getVal(['¿estado equipo operativo?', 'estado equipo operativo', 'estado del equipo', 'estado equipo', 'estado']);
                 const tipoVisita = getVal(['tipo visita', 'tipo de visita', 'tipo_visita']);
-                const observaciones = [obsGen, tareas].filter(Boolean).join(' — ');
+                const observaciones = obsGen;
 
                 const pdf = getVal(['ruta_pdf', 'ruta pdf', 'pdf link', 'pdf_link', 'pdf', 'informe', 'link', 'enlace', 'reporte', 'url', 'archivo', 'documento', 'adjunto']);
 
@@ -1934,6 +1983,61 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
             if (fname) return 'https://drive.google.com/drive/search?q=' + encodeURIComponent(fname);
             if (key) return 'https://drive.google.com/drive/search?q=' + encodeURIComponent(key);
             return '';
+        }
+
+        // Devuelve el nombre de archivo (basename) desde la RUTA_PDF
+        function pdfFileName(ruta) {
+            if (!ruta) return '';
+            return String(ruta).split(/[\\/]/).pop().trim();
+        }
+
+        // ¿El enlace ya apunta a un archivo directo de Drive?
+        function isDirectDriveFile(url) {
+            return /\/file\/d\//.test(url || '');
+        }
+
+        // Resuelve EN VIVO el ID de Drive de un PDF por su nombre, dentro de la carpeta REPORTES_ARG.
+        // Requiere que la carpeta sea pública y una clave API de Drive (config.driveApiKey).
+        const __driveResolveCache = {};
+        async function driveFindFileId(fileName) {
+            const key = (config.driveApiKey || '').trim();
+            if (!key || !fileName) return null;
+            if (__driveResolveCache[fileName] !== undefined) return __driveResolveCache[fileName];
+            const q = `name = '${fileName.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}' and '${REPORTES_FOLDER_ID}' in parents and trashed = false`;
+            const url = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}` +
+                `&key=${encodeURIComponent(key)}&fields=files(id,name)&pageSize=1&supportsAllDrives=true`;
+            try {
+                const resp = await fetch(url);
+                if (!resp.ok) { __driveResolveCache[fileName] = null; return null; }
+                const data = await resp.json();
+                const id = data.files && data.files[0] ? data.files[0].id : null;
+                __driveResolveCache[fileName] = id;
+                return id;
+            } catch (e) {
+                console.warn("Drive API no respondió:", e.message);
+                return null;
+            }
+        }
+
+        // Tras renderizar la tabla, resuelve en vivo los informes que aún no apuntan al archivo directo.
+        async function resolveVisibleReports() {
+            if (!(config.driveApiKey || '').trim()) return; // sin clave no hay resolución en vivo
+            const anchors = document.querySelectorAll('#dash-services-table-body a[data-needs-resolve="1"]');
+            for (const a of anchors) {
+                const fname = a.dataset.fname;
+                const cacheKey = a.dataset.idserv || fname;
+                if (cacheKey && PDF_ID_MAP[cacheKey]) {
+                    a.href = `https://drive.google.com/file/d/${PDF_ID_MAP[cacheKey]}/view`;
+                    a.removeAttribute('data-needs-resolve');
+                    continue;
+                }
+                const id = await driveFindFileId(fname);
+                if (id) {
+                    if (cacheKey) PDF_ID_MAP[cacheKey] = id;
+                    a.href = `https://drive.google.com/file/d/${id}/view`;
+                    a.removeAttribute('data-needs-resolve');
+                }
+            }
         }
 
         // Normaliza distintos formatos de fecha a "DD/MM/YYYY HH:MM:SS" (día primero, estándar CL)
@@ -2374,24 +2478,27 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
                 const alertIndicator = isCritical ? `<span class="inline-block w-2.5 h-2.5 rounded-full bg-rose-500 mr-2 animate-ping flex-shrink-0" title="Equipo no operativo / falla crítica"></span>` : '';
                 const visitaBadge = item.TIPO_VISITA ? `<span class="ml-2 inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-500">${esc(item.TIPO_VISITA)}</span>` : '';
 
+                // Si el enlace aún no es directo, lo marcamos para resolverlo en vivo (si hay clave API)
+                const fname = pdfFileName(item.RUTA_PDF);
+                const needsResolve = (!isDirectDriveFile(item.PDF_LINK) && fname) ? `data-needs-resolve="1" data-fname="${esc(fname)}" data-idserv="${esc(item.ID_SERVICIO || '')}"` : '';
                 const pdfCell = item.PDF_LINK
-                    ? `<a href="${esc(item.PDF_LINK)}" target="_blank" title="Abrir el informe en Google Drive" class="inline-flex items-center space-x-1.5 bg-rose-50 dark:bg-rose-950/20 hover:bg-rose-100 dark:hover:bg-rose-950/40 text-rose-600 dark:text-rose-400 px-3.5 py-2 rounded-xl text-xs font-bold transition-all border border-rose-100 dark:border-rose-950/30">
+                    ? `<a href="${esc(item.PDF_LINK)}" target="_blank" ${needsResolve} title="Abrir el informe en Google Drive" class="inline-flex items-center space-x-1.5 bg-rose-50 dark:bg-rose-950/20 hover:bg-rose-100 dark:hover:bg-rose-950/40 text-rose-600 dark:text-rose-400 px-3.5 py-2 rounded-xl text-xs font-bold transition-all border border-rose-100 dark:border-rose-950/30">
                             <i data-lucide="file-text" class="w-3.5 h-3.5"></i>
                             <span>Ver informe</span>
                         </a>`
                     : `<span class="text-xs text-slate-400">—</span>`;
 
                 tr.innerHTML = `
-                    <td class="px-6 py-4 text-slate-500 dark:text-slate-400 font-semibold whitespace-nowrap">${esc(item.FECHA)}</td>
-                    <td class="px-6 py-4 font-bold text-slate-950 dark:text-white">${esc(item.EMPRESA)}</td>
-                    <td class="px-6 py-4 text-xs font-semibold text-slate-700 dark:text-slate-300">
-                        <span class="inline-flex items-center">
+                    <td class="px-4 py-3 text-xs text-slate-500 dark:text-slate-400 font-semibold">${esc(item.FECHA)}</td>
+                    <td class="px-4 py-3 text-xs font-bold text-slate-950 dark:text-white break-words">${esc(item.EMPRESA)}</td>
+                    <td class="px-4 py-3 text-xs font-semibold text-slate-700 dark:text-slate-300 break-words">
+                        <span class="inline-flex items-start">
                             ${alertIndicator}
                             <span>${esc(item.EQUIPO)}${visitaBadge}</span>
                         </span>
                     </td>
-                    <td class="px-6 py-4 text-slate-600 dark:text-slate-400 leading-relaxed" style="min-width: 600px;">${esc(item.OBSERVACIONES)}</td>
-                    <td class="px-6 py-4 whitespace-nowrap no-print">${pdfCell}</td>
+                    <td class="px-4 py-3 text-xs text-slate-600 dark:text-slate-400 leading-snug break-words">${esc(item.OBSERVACIONES) || '<span class="text-slate-400">—</span>'}</td>
+                    <td class="px-4 py-3 whitespace-nowrap no-print">${pdfCell}</td>
                 `;
                 tableBody.appendChild(tr);
             });
@@ -2417,6 +2524,9 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
             tableBody.appendChild(trFooter);
 
             lucide.createIcons();
+
+            // Resolver en vivo (vía Drive API) los informes que aún no apuntan al archivo directo
+            resolveVisibleReports();
         }
 
         // Muestra 15 servicios más en la bitácora
@@ -2425,37 +2535,113 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
             renderDashboardServicesTable();
         }
 
-        // --- CÁLCULO DE INTELIGENCIA DE NEGOCIOS Y ANALÍTICA ---
+        // --- CÁLCULO DE INTELIGENCIA DE NEGOCIOS Y ANALÍTICA (orientada a Ventas · Costos · Rapidez) ---
         function calculateBusinessIntelligence() {
-            // 1. Servicios totales del mes actual
             const periodo = getCurrentPeriod();
-            const serviciosMes = filteredServices.filter(s => s.FECHA.includes(periodo.monthTag));
+            const serv = filteredServices; // respeta los filtros activos
+            const total = serv.length;
+
+            // Helper: contar ocurrencias por campo y ordenar desc
+            const rank = (arr, fn) => {
+                const c = {};
+                arr.forEach(s => { const k = fn(s); if (k) c[k] = (c[k] || 0) + 1; });
+                return Object.entries(c).sort((a, b) => b[1] - a[1]);
+            };
+
+            // --- Métricas base ---
+            const serviciosMes = serv.filter(s => s.FECHA.includes(periodo.monthTag));
+            const noOperativos = serv.filter(s => s.OPERATIVO === false);
+            const correctivos = serv.filter(s => /correctiv/i.test(s.TIPO_VISITA)).length;
+            const preventivos = serv.filter(s => /preventiv/i.test(s.TIPO_VISITA)).length;
+            const pctCorrectivo = total ? Math.round(correctivos / total * 100) : 0;
+            const pctPreventivo = total ? Math.round(preventivos / total * 100) : 0;
+            const rate = total ? Math.round(noOperativos.length / total * 100) : 0;
+
+            const porEmpresa = rank(serv, s => s.EMPRESA && s.EMPRESA !== 'SIN EMPRESA' ? s.EMPRESA : null);
+            const porTipo = rank(serv, s => s.TIPO_EQUIPO);
+            const porEquipo = rank(serv, s => s.EQUIPO);
+            const porTipoNoOp = rank(noOperativos, s => s.TIPO_EQUIPO);
+
+            // --- KPIs superiores ---
             document.getElementById('analisis-servicios-mes').innerText = serviciosMes.length;
-
-            // 2. Tasa de criticidad del mes (equipos no operativos o fallas declaradas)
-            const criticalServices = filteredServices.filter(s =>
-                s.OPERATIVO === false ||
-                s.OBSERVACIONES.toLowerCase().includes('fuera de servicio') ||
-                s.OBSERVACIONES.toLowerCase().includes('inoperativo') ||
-                s.OBSERVACIONES.toLowerCase().includes('crítica')
-            );
-            const rate = filteredServices.length > 0 ? Math.round((criticalServices.length / filteredServices.length) * 100) : 0;
+            const subMes = document.getElementById('analisis-servicios-mes-sub');
+            if (subMes) subMes.innerText = `Intervenciones de ${periodo.monthName} ${periodo.year}`;
             document.getElementById('analisis-tasa-criticidad').innerText = `${rate}%`;
+            document.getElementById('analisis-cuello-botella').innerText = porEquipo.length ? `${porEquipo[0][0]} (${porEquipo[0][1]})` : "Estable";
 
-            // 3. Cuello de botella: Identificar el equipo que más se repite en servicios correctivos
-            const counter = {};
-            let maxCount = 0;
-            let bottleneck = "Ninguno Detectado";
-
-            filteredServices.forEach(s => {
-                counter[s.EQUIPO] = (counter[s.EQUIPO] || 0) + 1;
-                if (counter[s.EQUIPO] > maxCount) {
-                    maxCount = counter[s.EQUIPO];
-                    bottleneck = s.EQUIPO;
+            // --- Diagnóstico operativo (texto dinámico) ---
+            const opTit = document.getElementById('analisis-op-titulo');
+            if (opTit) opTit.innerText = `Actividad (${periodo.monthName} ${periodo.year})`;
+            const opEl = document.getElementById('analisis-operacion');
+            if (opEl) {
+                if (total === 0) {
+                    opEl.innerHTML = 'No hay servicios para los filtros actuales.';
+                } else {
+                    const topCli = porEmpresa[0];
+                    const topTipo = porTipo[0];
+                    opEl.innerHTML =
+                        `Se registran <strong class="text-slate-900 dark:text-white">${total}</strong> servicios en la vista actual ` +
+                        `(<strong class="text-slate-900 dark:text-white">${serviciosMes.length}</strong> en ${periodo.monthName}). ` +
+                        (topCli ? `El cliente más activo es <strong class="text-slate-900 dark:text-white">${topCli[0]}</strong> (${topCli[1]} servicios). ` : '') +
+                        (topTipo ? `El equipo más intervenido es <strong class="text-slate-900 dark:text-white">${topTipo[0]}</strong> (${topTipo[1]}). ` : '') +
+                        `Distribución: <strong class="text-emerald-600 dark:text-emerald-400">${pctPreventivo}% preventivo</strong> vs <strong class="text-rose-600 dark:text-rose-400">${pctCorrectivo}% correctivo</strong>.`;
                 }
-            });
+            }
+            const histEl = document.getElementById('analisis-historico');
+            if (histEl) {
+                if (total === 0) {
+                    histEl.innerHTML = '—';
+                } else {
+                    const topEq = porEquipo[0];
+                    const topFallaTipo = porTipoNoOp[0];
+                    histEl.innerHTML =
+                        `Se atienden <strong class="text-slate-900 dark:text-white">${porEmpresa.length}</strong> clientes y ` +
+                        `<strong class="text-slate-900 dark:text-white">${porTipo.length}</strong> tipos de equipo. ` +
+                        (topEq ? `El equipo con más intervenciones es <strong class="text-slate-900 dark:text-white">${topEq[0]}</strong> (${topEq[1]} visitas). ` : '') +
+                        `Se reportan <strong class="text-rose-600 dark:text-rose-400">${noOperativos.length}</strong> servicios con equipo NO operativo` +
+                        (topFallaTipo ? `, concentrados en <strong class="text-slate-900 dark:text-white">${topFallaTipo[0]}</strong>.` : '.');
+                }
+            }
 
-            document.getElementById('analisis-cuello-botella').innerText = maxCount > 0 ? `${bottleneck} (${maxCount} fallas)` : "Estable";
+            // --- Recomendaciones: VENDER MÁS ---
+            const ventas = [];
+            if (porEmpresa.length) {
+                const topCli = porEmpresa.slice(0, 3).map(x => x[0]).join(', ');
+                ventas.push(`<strong>Fidelizar a tus mejores clientes:</strong> ${topCli} concentran la mayor actividad. Ofréceles un contrato de mantenimiento preventivo anual para asegurar ingresos recurrentes.`);
+            }
+            if (porTipoNoOp.length) {
+                ventas.push(`<strong>Plan preventivo por tipo:</strong> los equipos de tipo <strong>${porTipoNoOp[0][0]}</strong> son los que más fallan. Vende un plan preventivo específico para este tipo y reduce sus paradas.`);
+            }
+            if (pctPreventivo < 50 && total > 0) {
+                ventas.push(`<strong>Upgrade a preventivo:</strong> solo el ${pctPreventivo}% de las visitas son preventivas. Convertir clientes correctivos a planes preventivos aumenta el ticket y la recurrencia.`);
+            }
+            if (!ventas.length) ventas.push('Sin oportunidades detectadas para los filtros actuales.');
+
+            // --- Recomendaciones: BAJAR COSTOS / RAPIDEZ ---
+            const costos = [];
+            const equiposReincidentes = porEquipo.filter(x => x[1] >= 3).slice(0, 3);
+            if (equiposReincidentes.length) {
+                const lista = equiposReincidentes.map(x => `${x[0]} (${x[1]})`).join(', ');
+                costos.push(`<strong>Evaluar reemplazo:</strong> ${lista} acumulan muchas visitas. Reemplazar estos activos elimina visitas repetidas y baja el costo de mantención.`);
+            }
+            if (porTipoNoOp.length) {
+                costos.push(`<strong>Pre-stock de repuestos:</strong> mantén en bodega repuestos para <strong>${porTipoNoOp[0][0]}</strong> (lo que más falla) para resolver en la primera visita y bajar el tiempo de respuesta (MTTR).`);
+            }
+            if (pctCorrectivo > pctPreventivo && total > 0) {
+                costos.push(`<strong>Más preventivo, menos emergencias:</strong> el ${pctCorrectivo}% de los servicios son correctivos. Subir la proporción preventiva reduce fallas críticas y costos de emergencia.`);
+            }
+            if (noOperativos.length) {
+                costos.push(`<strong>Priorizar equipos caídos:</strong> hay ${noOperativos.length} servicios con equipo NO operativo. Atenderlos primero evita penalizaciones por SLA y pérdida de clientes.`);
+            }
+            if (!costos.length) costos.push('Operación estable: sin acciones críticas de costo para los filtros actuales.');
+
+            const fillList = (id, items) => {
+                const ul = document.getElementById(id);
+                if (!ul) return;
+                ul.innerHTML = items.map(t => `<li>${t}</li>`).join('');
+            };
+            fillList('analisis-reco-ventas', ventas);
+            fillList('analisis-reco-costos', costos);
         }
 
         // --- CREACIÓN E INICIALIZACIÓN DE GRÁFICOS (CHART.JS) ---
