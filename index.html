@@ -86,6 +86,40 @@
                 display: block !important;
             }
         }
+
+        /* ===== RESPONSIVE MÓVIL: tablas como tarjetas apiladas ===== */
+        @media (max-width: 768px) {
+            .responsive-table { display: block; }
+            .responsive-table thead { display: none; }
+            .responsive-table tbody { display: block; }
+            .responsive-table tr {
+                display: block;
+                margin-bottom: 0.75rem;
+                border: 1px solid #e2e8f0;
+                border-radius: 0.75rem;
+                padding: 0.5rem 0.85rem;
+            }
+            .dark .responsive-table tr { border-color: #1e293b; }
+            .responsive-table td {
+                display: block !important;
+                width: 100% !important;
+                border: none !important;
+                padding: 0.3rem 0 !important;
+                white-space: normal !important;
+            }
+            .responsive-table td[data-label]::before {
+                content: attr(data-label);
+                display: block;
+                font-weight: 700;
+                color: #94a3b8;
+                font-size: 10px;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                margin-bottom: 1px;
+            }
+            /* Filas de pie (paginación / "ver más") no se ven como tarjeta */
+            .responsive-table tr.table-footer-row { border: none; padding: 0.5rem 0; }
+        }
     </style>
 </head>
 <body class="h-full text-slate-800 dark:text-slate-100 transition-colors duration-200">
@@ -126,6 +160,10 @@
                     <i data-lucide="trending-up" class="w-5 h-5"></i>
                     <span>Analítica y Estrategia</span>
                 </button>
+                <button onclick="switchTab('mantenimiento')" id="btn-mantenimiento" class="tab-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white font-medium transition-all">
+                    <i data-lucide="wrench" class="w-5 h-5"></i>
+                    <span>Mantenimiento</span>
+                </button>
                 <button onclick="switchTab('config')" id="btn-config" class="tab-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white font-medium transition-all">
                     <i data-lucide="settings" class="w-5 h-5"></i>
                     <span>Conexión Google Sheets</span>
@@ -165,23 +203,23 @@
             </div>
 
             <!-- TOP NAVBAR (Oculto en Impresión/PDF) -->
-            <header class="bg-white dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 px-6 py-4 flex items-center justify-between no-print">
-                <div class="flex items-center space-x-4">
-                    <button onclick="toggleSidebar()" title="Menú" class="p-2 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white rounded-lg bg-slate-100 dark:bg-slate-800 transition-all">
+            <header class="bg-white dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-2 no-print">
+                <div class="flex items-center space-x-2 sm:space-x-4 min-w-0">
+                    <button onclick="toggleSidebar()" title="Menú" class="p-2 flex-shrink-0 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white rounded-lg bg-slate-100 dark:bg-slate-800 transition-all">
                         <i data-lucide="menu" class="w-5 h-5"></i>
                     </button>
-                    <h2 id="current-tab-title" class="text-xl font-bold text-slate-900 dark:text-white">Vista General</h2>
-                    <span id="realtime-badge" class="hidden px-2.5 py-0.5 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
+                    <h2 id="current-tab-title" class="text-base sm:text-xl font-bold text-slate-900 dark:text-white truncate">Vista General</h2>
+                    <span id="realtime-badge" class="hidden sm:inline-flex px-2.5 py-0.5 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 items-center">
                         <span class="inline-block w-1.5 h-1.5 bg-blue-600 dark:bg-blue-400 rounded-full mr-1.5 animate-pulse"></span>
                         Tiempo Real Activo
                     </span>
                 </div>
-                
-                <div class="flex items-center space-x-4">
+
+                <div class="flex items-center space-x-2 sm:space-x-4 flex-shrink-0">
                     <!-- Botón de Sincronizar Ahora -->
-                    <button onclick="fetchSheetData()" class="flex items-center space-x-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 px-4 py-2 rounded-lg font-medium text-sm transition-all">
+                    <button onclick="fetchSheetData()" title="Sincronizar ahora" class="flex items-center space-x-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 px-3 sm:px-4 py-2 rounded-lg font-medium text-sm transition-all">
                         <i data-lucide="refresh-cw" class="w-4 h-4" id="sync-icon"></i>
-                        <span>Sincronizar ahora</span>
+                        <span class="hidden sm:inline">Sincronizar ahora</span>
                     </button>
                     
                     <!-- Toggle Tema Dark/Light -->
@@ -202,7 +240,7 @@
             </div>
 
             <!-- CONTENEDOR MULTIPÁGINA (TABS) -->
-            <div id="main-scroll" class="flex-1 overflow-y-auto p-6 space-y-6">
+            <div id="main-scroll" class="flex-1 overflow-y-auto p-3 sm:p-6 space-y-4 sm:space-y-6">
 
                 <!-- 1. TAB Vista General (RESUMEN) -->
                 <div id="tab-resumen" class="space-y-6">
@@ -359,17 +397,43 @@
                             </div>
                         </div>
 
-                        <!-- Distribución por Marca -->
+                        <!-- Estado de Cumplimiento de Mantenimiento -->
                         <div class="bg-white dark:bg-slate-950 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm chart-container-print">
                             <div class="flex items-center justify-between mb-4">
                                 <div>
-                                    <h4 class="font-bold text-slate-900 dark:text-white">Principales Fabricantes (Marcas)</h4>
-                                    <p class="text-xs text-slate-400">Haz clic para filtrar por marca del fabricante</p>
+                                    <h4 class="font-bold text-slate-900 dark:text-white">Estado de Cumplimiento de Mantenimiento</h4>
+                                    <p class="text-xs text-slate-400">Según última preventiva y periodicidad de cada equipo</p>
                                 </div>
-                                <span class="text-xs text-slate-400">Interactiva</span>
                             </div>
-                            <div class="relative h-80">
-                                <canvas id="chart-marcas"></canvas>
+                            <div class="grid grid-cols-2 gap-4 items-center">
+                                <div class="relative h-56">
+                                    <canvas id="chart-cumplimiento"></canvas>
+                                </div>
+                                <div class="space-y-2 text-sm">
+                                    <button type="button" onclick="showCumplimientoDetalle('vig')" class="w-full flex items-center justify-between p-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/20 hover:ring-2 hover:ring-emerald-400 transition-all">
+                                        <span class="flex items-center space-x-2"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span><span class="text-slate-600 dark:text-slate-300">Vigentes</span></span>
+                                        <strong id="cumpl-vigentes" class="text-slate-900 dark:text-white">-</strong>
+                                    </button>
+                                    <button type="button" onclick="showCumplimientoDetalle('mes')" class="w-full flex items-center justify-between p-2 rounded-lg bg-amber-50 dark:bg-amber-950/20 hover:ring-2 hover:ring-amber-400 transition-all">
+                                        <span class="flex items-center space-x-2"><span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span><span class="text-slate-600 dark:text-slate-300">Vencen este mes</span></span>
+                                        <strong id="cumpl-mes" class="text-slate-900 dark:text-white">-</strong>
+                                    </button>
+                                    <button type="button" onclick="showCumplimientoDetalle('v30')" class="w-full flex items-center justify-between p-2 rounded-lg bg-orange-50 dark:bg-orange-950/20 hover:ring-2 hover:ring-orange-400 transition-all">
+                                        <span class="flex items-center space-x-2"><span class="w-2.5 h-2.5 rounded-full bg-orange-500"></span><span class="text-slate-600 dark:text-slate-300">Vencidos ≤ 30 días</span></span>
+                                        <strong id="cumpl-venc30" class="text-slate-900 dark:text-white">-</strong>
+                                    </button>
+                                    <button type="button" onclick="showCumplimientoDetalle('v30p')" class="w-full flex items-center justify-between p-2 rounded-lg bg-rose-50 dark:bg-rose-950/20 hover:ring-2 hover:ring-rose-400 transition-all">
+                                        <span class="flex items-center space-x-2"><span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span><span class="text-slate-600 dark:text-slate-300">Vencidos > 30 días</span></span>
+                                        <strong id="cumpl-venc30plus" class="text-slate-900 dark:text-white">-</strong>
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="cumpl-detalle" class="hidden mt-4 border-t border-slate-100 dark:border-slate-800 pt-3">
+                                <div class="flex items-center justify-between mb-2">
+                                    <h5 id="cumpl-detalle-titulo" class="text-xs font-bold uppercase tracking-wider text-slate-500"></h5>
+                                    <button onclick="document.getElementById('cumpl-detalle').classList.add('hidden')" class="text-xs text-slate-400 hover:text-rose-500">Cerrar ✕</button>
+                                </div>
+                                <div id="cumpl-detalle-lista" class="max-h-56 overflow-y-auto space-y-1 text-xs"></div>
                             </div>
                         </div>
                     </div>
@@ -391,45 +455,33 @@
                             </div>
                         </div>
 
-                        <!-- Estado y Periodicidad de Mantenimiento -->
+                        <!-- Servicios por Tipo de Equipo -->
                         <div class="bg-white dark:bg-slate-950 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm lg:col-span-2 chart-container-print">
                             <div class="flex items-center justify-between mb-4">
-                                <h4 class="font-bold text-slate-900 dark:text-white">Estado de Mantenimiento (Periodicidad)</h4>
-                                <span class="text-xs text-slate-400">Vigentes vs De baja</span>
+                                <div>
+                                    <h4 class="font-bold text-slate-900 dark:text-white">Servicios por Tipo de Equipo</h4>
+                                    <p class="text-xs text-slate-400">Volumen de mantenimiento por tipo de tecnología</p>
+                                </div>
+                                <span class="text-xs text-emerald-500 font-bold">Servicios</span>
                             </div>
                             <div class="relative h-64">
-                                <canvas id="chart-periodicidades"></canvas>
+                                <canvas id="chart-servicios-equipo"></canvas>
                             </div>
                         </div>
                     </div>
 
-                    <!-- NOVEDAD: GRÁFICOS RESUMEN DE SERVICIOS EFECTUADOS (PEDIDO POR EL USUARIO) -->
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <!-- Gráfico de Servicios por Empresa -->
+                    <!-- GRÁFICO DE SERVICIOS POR EMPRESA -->
+                    <div class="grid grid-cols-1 gap-6">
                         <div class="bg-white dark:bg-slate-950 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm chart-container-print">
                             <div class="flex items-center justify-between mb-4">
                                 <div>
                                     <h4 class="font-bold text-slate-900 dark:text-white">Servicios por Empresa / Cliente</h4>
-                                    <p class="text-xs text-slate-400 font-medium text-slate-400">Filtra al hacer clic en un cliente</p>
+                                    <p class="text-xs text-slate-400">Filtra al hacer clic en un cliente</p>
                                 </div>
                                 <span class="text-xs text-emerald-500 font-bold">Servicios</span>
                             </div>
                             <div class="relative h-80">
                                 <canvas id="chart-servicios-empresa"></canvas>
-                            </div>
-                        </div>
-
-                        <!-- Gráfico de Servicios por Equipo -->
-                        <div class="bg-white dark:bg-slate-950 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm chart-container-print">
-                            <div class="flex items-center justify-between mb-4">
-                                <div>
-                                    <h4 class="font-bold text-slate-900 dark:text-white">Servicios por Tipo de Equipo</h4>
-                                    <p class="text-xs text-slate-400 font-medium text-slate-400">Volumen de mantenimiento por tipo de tecnología</p>
-                                </div>
-                                <span class="text-xs text-emerald-500 font-bold">Servicios</span>
-                            </div>
-                            <div class="relative h-80">
-                                <canvas id="chart-servicios-equipo"></canvas>
                             </div>
                         </div>
                     </div>
@@ -449,7 +501,7 @@
                         </div>
                         
                         <div class="overflow-x-auto">
-                            <table class="w-full text-left border-collapse text-sm table-fixed">
+                            <table class="w-full text-left border-collapse text-sm table-fixed responsive-table">
                                 <colgroup>
                                     <col class="w-[90px]">
                                     <col class="w-[13%]">
@@ -535,7 +587,7 @@
                     <!-- TABLA DE EQUIPOS -->
                     <div class="bg-white dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
                         <div class="overflow-x-auto">
-                            <table class="w-full text-left border-collapse">
+                            <table class="w-full text-left border-collapse responsive-table">
                                 <thead>
                                     <tr class="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 text-slate-500 text-xs font-semibold uppercase tracking-wider">
                                         <th class="px-6 py-4">ID</th>
@@ -673,6 +725,196 @@
                                     <ul id="analisis-reco-costos" class="list-disc list-inside text-xs text-slate-600 dark:text-slate-300 space-y-2"></ul>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4b. TAB MANTENIMIENTO -->
+                <div id="tab-mantenimiento" class="space-y-6 hidden">
+
+                    <!-- FILTROS DE MANTENIMIENTO -->
+                    <div class="bg-white dark:bg-slate-950 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4 no-print">
+                        <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-900 pb-3">
+                            <h4 class="font-bold text-slate-900 dark:text-white flex items-center space-x-2">
+                                <i data-lucide="sliders" class="w-5 h-5 text-primary-500"></i>
+                                <span>Filtros de Mantenimiento</span>
+                            </h4>
+                            <button onclick="resetMantFilters()" class="text-xs font-semibold text-slate-500 hover:text-primary-600 dark:hover:text-primary-400 transition-all flex items-center space-x-1">
+                                <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i><span>Reestablecer</span>
+                            </button>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <!-- Empresa (multiselección) -->
+                            <div class="space-y-1">
+                                <label class="text-xs font-bold text-slate-400 uppercase tracking-wider">Empresa / Cliente</label>
+                                <div class="relative">
+                                    <button type="button" onclick="mantToggleMs('empresa')" class="w-full flex items-center justify-between px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-transparent text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                                        <span id="ms-mant-empresa-label" class="truncate text-left">Todas las Empresas</span>
+                                        <i data-lucide="chevron-down" class="w-4 h-4 flex-shrink-0 text-slate-400"></i>
+                                    </button>
+                                    <div id="ms-mant-empresa-panel" class="multiselect-panel hidden absolute z-30 mt-1 w-full max-h-64 overflow-y-auto rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-xl p-2 space-y-0.5"></div>
+                                </div>
+                            </div>
+                            <!-- Tipo de Equipo (multiselección) -->
+                            <div class="space-y-1">
+                                <label class="text-xs font-bold text-slate-400 uppercase tracking-wider">Tipo de Equipo</label>
+                                <div class="relative">
+                                    <button type="button" onclick="mantToggleMs('tipo')" class="w-full flex items-center justify-between px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-transparent text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                                        <span id="ms-mant-tipo-label" class="truncate text-left">Todos los Tipos</span>
+                                        <i data-lucide="chevron-down" class="w-4 h-4 flex-shrink-0 text-slate-400"></i>
+                                    </button>
+                                    <div id="ms-mant-tipo-panel" class="multiselect-panel hidden absolute z-30 mt-1 w-full max-h-64 overflow-y-auto rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-xl p-2 space-y-0.5"></div>
+                                </div>
+                            </div>
+                            <!-- Ubicación (single) -->
+                            <div class="space-y-1">
+                                <label class="text-xs font-bold text-slate-400 uppercase tracking-wider">Ubicación</label>
+                                <select id="mant-filter-ubicacion" onchange="handleMantFilterChange()" class="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-transparent text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                                    <option value="">Todas las Ubicaciones</option>
+                                </select>
+                            </div>
+                            <!-- Rango de fechas -->
+                            <div class="space-y-1">
+                                <label class="text-xs font-bold text-slate-400 uppercase tracking-wider">Desde (Fecha)</label>
+                                <input type="date" id="mant-filter-fecha-inicio" onchange="handleMantFilterChange()" class="w-full px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-transparent text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                            </div>
+                            <div class="space-y-1">
+                                <label class="text-xs font-bold text-slate-400 uppercase tracking-wider">Hasta (Fecha)</label>
+                                <input type="date" id="mant-filter-fecha-fin" onchange="handleMantFilterChange()" class="w-full px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-transparent text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                            </div>
+                        </div>
+                        <p class="text-[11px] text-slate-400">Sin rango de fechas, los indicadores usan los últimos 12 meses. Con rango, se acotan a ese período. Haz clic en cualquier gráfico para filtrar todo el panel.</p>
+                        <div id="mant-active-chips" class="hidden flex-wrap gap-2 pt-1 items-center"></div>
+                    </div>
+
+                    <!-- A. CRITICIDAD: gráfico + tabla lado a lado -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="bg-white dark:bg-slate-950 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm chart-container-print">
+                            <h4 class="font-bold text-slate-900 dark:text-white mb-1">Criticidad de Equipos</h4>
+                            <p class="text-xs text-slate-400 mb-4">Top 10 por urgencias. Clic en una barra para filtrar por equipo.</p>
+                            <div class="relative h-80"><canvas id="chart-criticidad"></canvas></div>
+                        </div>
+                        <div class="bg-white dark:bg-slate-950 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                            <h4 class="font-bold text-slate-900 dark:text-white mb-1">Ranking de Criticidad</h4>
+                            <p class="text-xs text-slate-400 mb-3">0-1 baja · 2-4 media · 5+ alta</p>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left text-sm responsive-table">
+                                    <thead><tr class="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 text-slate-500 text-[11px] font-semibold uppercase tracking-wider">
+                                        <th class="px-3 py-3">Equipo</th><th class="px-3 py-3">Empresa</th><th class="px-3 py-3">Urgencias</th><th class="px-3 py-3">Criticidad</th>
+                                    </tr></thead>
+                                    <tbody id="mant-criticidad-body" class="divide-y divide-slate-200 dark:divide-slate-800 align-top"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- B. TENDENCIA DE FALLAS: heatmap + tabla lado a lado -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="bg-white dark:bg-slate-950 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm chart-container-print">
+                            <h4 class="font-bold text-slate-900 dark:text-white mb-1">Tendencia de Fallas (Mapa de Calor)</h4>
+                            <p class="text-xs text-slate-400 mb-4">Fallas correctivas por equipo y mes. Color más intenso = más fallas.</p>
+                            <div id="mant-heatmap" class="overflow-x-auto text-xs"></div>
+                        </div>
+                        <div class="bg-white dark:bg-slate-950 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                            <h4 class="font-bold text-slate-900 dark:text-white mb-1">Ranking de Fallas Correctivas</h4>
+                            <p class="text-xs text-slate-400 mb-3">Equipo y empresa con más fallas. Clic para filtrar.</p>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left text-sm responsive-table">
+                                    <thead><tr class="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 text-slate-500 text-[11px] font-semibold uppercase tracking-wider">
+                                        <th class="px-3 py-3">Equipo</th><th class="px-3 py-3">Empresa</th><th class="px-3 py-3">Fallas</th>
+                                    </tr></thead>
+                                    <tbody id="mant-tendencia-body" class="divide-y divide-slate-200 dark:divide-slate-800 align-top"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- C. PANEL DE GRÁFICOS: cumplimiento + servicio por tipo + próximos -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div class="bg-white dark:bg-slate-950 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm chart-container-print">
+                            <h4 class="font-bold text-slate-900 dark:text-white mb-1">Cumplimiento de Mantenimiento</h4>
+                            <p class="text-xs text-slate-400 mb-4">Según periodicidad y última preventiva</p>
+                            <div class="relative h-64"><canvas id="chart-mant-cumplimiento"></canvas></div>
+                        </div>
+                        <div class="bg-white dark:bg-slate-950 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm chart-container-print">
+                            <h4 class="font-bold text-slate-900 dark:text-white mb-1">Servicios por Tipo de Equipo</h4>
+                            <p class="text-xs text-slate-400 mb-4">Clic para filtrar por tipo</p>
+                            <div class="relative h-64"><canvas id="chart-mant-servtipo"></canvas></div>
+                        </div>
+                        <div class="bg-white dark:bg-slate-950 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm chart-container-print">
+                            <h4 class="font-bold text-slate-900 dark:text-white mb-1">Próximos Mantenimientos</h4>
+                            <p class="text-xs text-slate-400 mb-4">Preventivas programadas por mes</p>
+                            <div class="relative h-64"><canvas id="chart-proximos"></canvas></div>
+                        </div>
+                    </div>
+
+                    <!-- D. PRÓXIMAS MANTENCIONES (expandible) -->
+                    <div class="bg-white dark:bg-slate-950 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                        <h4 class="font-bold text-lg text-slate-900 dark:text-white mb-1">Próximas Mantenciones</h4>
+                        <p class="text-xs text-slate-400 mb-4">Próxima = última preventiva registrada + periodicidad del equipo</p>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm responsive-table">
+                                <thead><tr class="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 text-slate-500 text-[11px] font-semibold uppercase tracking-wider">
+                                    <th class="px-3 py-3">Empresa / Cliente</th><th class="px-3 py-3">Equipo</th><th class="px-3 py-3">Periodicidad</th><th class="px-3 py-3">Última preventiva</th><th class="px-3 py-3">Próxima mantención</th>
+                                </tr></thead>
+                                <tbody id="mant-proximas-body" class="divide-y divide-slate-200 dark:divide-slate-800 align-top"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- E. EXPORTACIÓN DE MANTENCIONES (expandible + imprimir tabla) -->
+                    <div class="bg-white dark:bg-slate-950 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-3">
+                            <div>
+                                <h4 class="font-bold text-lg text-slate-900 dark:text-white">Exportación de Mantenciones</h4>
+                                <p class="text-xs text-slate-400">Detalle con observaciones. El botón abre una tabla lista para imprimir o guardar como PDF.</p>
+                            </div>
+                            <button onclick="exportMantenciones()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-semibold text-xs transition-all flex items-center space-x-1.5 no-print self-start">
+                                <i data-lucide="printer" class="w-4 h-4"></i><span>Exportar / Imprimir tabla</span>
+                            </button>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm responsive-table">
+                                <thead><tr class="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 text-slate-500 text-[11px] font-semibold uppercase tracking-wider">
+                                    <th class="px-3 py-3">Cliente</th><th class="px-3 py-3">Ubicación</th><th class="px-3 py-3">Equipo</th><th class="px-3 py-3">Periodicidad</th><th class="px-3 py-3">Observaciones</th><th class="px-3 py-3">Última mantención</th><th class="px-3 py-3">Próxima programada</th>
+                                </tr></thead>
+                                <tbody id="mant-export-body" class="divide-y divide-slate-200 dark:divide-slate-800 align-top"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- F. EQUIPOS NO OPERATIVOS: gráfico + tabla lado a lado -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="bg-white dark:bg-slate-950 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm chart-container-print">
+                            <h4 class="font-bold text-slate-900 dark:text-white mb-1">Días No Operativo por Empresa</h4>
+                            <p class="text-xs text-slate-400 mb-4">Total de días sin operar por cliente. Clic para filtrar.</p>
+                            <div class="relative h-96"><canvas id="chart-noop"></canvas></div>
+                        </div>
+                        <div class="bg-white dark:bg-slate-950 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                            <h4 class="font-bold text-lg text-slate-900 dark:text-white mb-1">Equipos No Operativos</h4>
+                            <p class="text-xs text-slate-400 mb-4">Ordenados de mayor a menor cantidad de días</p>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left text-sm responsive-table">
+                                    <thead><tr class="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 text-slate-500 text-[11px] font-semibold uppercase tracking-wider">
+                                        <th class="px-3 py-3">Cliente</th><th class="px-3 py-3">Equipo</th><th class="px-3 py-3">Ubicación</th><th class="px-3 py-3">Fecha</th><th class="px-3 py-3">Días</th>
+                                    </tr></thead>
+                                    <tbody id="mant-nooperativos-body" class="divide-y divide-slate-200 dark:divide-slate-800 align-top"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- G. EQUIPOS CON OBSERVACIONES PENDIENTES (expandible) -->
+                    <div class="bg-white dark:bg-slate-950 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                        <h4 class="font-bold text-lg text-slate-900 dark:text-white mb-1">Equipos con Observaciones Pendientes</h4>
+                        <p class="text-xs text-slate-400 mb-4">Equipos cuyo último servicio quedó "Con Observaciones"</p>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm responsive-table">
+                                <thead><tr class="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 text-slate-500 text-[11px] font-semibold uppercase tracking-wider">
+                                    <th class="px-3 py-3">Cliente</th><th class="px-3 py-3">Equipo</th><th class="px-3 py-3">Ubicación</th><th class="px-3 py-3">Observación pendiente</th>
+                                </tr></thead>
+                                <tbody id="mant-observaciones-body" class="divide-y divide-slate-200 dark:divide-slate-800 align-top"></tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
@@ -1454,6 +1696,7 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
             lucide.createIcons();
             loadSavedConfig();
             loadSavedFilters();
+            loadMantFilters();
             // Carga previa instantánea del inventario desde el CSV embebido en el proyecto
             loadBaselineData();
             initCharts();
@@ -1545,6 +1788,7 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
             document.getElementById('tab-resumen').classList.add('hidden');
             document.getElementById('tab-equipos').classList.add('hidden');
             document.getElementById('tab-analisis').classList.add('hidden');
+            document.getElementById('tab-mantenimiento').classList.add('hidden');
             document.getElementById('tab-config').classList.add('hidden');
 
             const navButtons = document.querySelectorAll('.tab-btn');
@@ -1564,6 +1808,7 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
             let titleText = 'Vista General';
             if (tabId === 'equipos') titleText = 'Inventario de Equipos';
             if (tabId === 'analisis') titleText = 'Analítica y Estrategia';
+            if (tabId === 'mantenimiento') titleText = 'Gestión de Mantenimiento';
             if (tabId === 'config') titleText = 'Sincronización en Tiempo Real';
             document.getElementById('current-tab-title').innerText = titleText;
 
@@ -1572,6 +1817,8 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
                 updateDashboardCharts();
             } else if (tabId === 'analisis') {
                 calculateBusinessIntelligence();
+            } else if (tabId === 'mantenimiento') {
+                computeMaintenance();
             }
         }
 
@@ -2299,6 +2546,7 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
             updateDashboardCharts();
             renderDashboardServicesTable();
             calculateBusinessIntelligence(); // Sincroniza la IA de analítica con tus filtros
+            if (currentTab === 'mantenimiento') computeMaintenance();
         }
 
         // Parsear fecha en formato "DD/MM/YYYY HH:MM:SS"
@@ -2489,16 +2737,16 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
                     : `<span class="text-xs text-slate-400">—</span>`;
 
                 tr.innerHTML = `
-                    <td class="px-2 py-3 text-xs text-slate-500 dark:text-slate-400 font-semibold break-words">${esc(item.FECHA)}</td>
-                    <td class="px-2 py-3 text-xs font-bold text-slate-950 dark:text-white break-words">${esc(item.EMPRESA)}</td>
-                    <td class="px-2 py-3 text-xs font-semibold text-slate-700 dark:text-slate-300 break-words">
+                    <td data-label="Fecha" class="px-2 py-3 text-xs text-slate-500 dark:text-slate-400 font-semibold break-words">${esc(item.FECHA)}</td>
+                    <td data-label="Empresa / Cliente" class="px-2 py-3 text-xs font-bold text-slate-950 dark:text-white break-words">${esc(item.EMPRESA)}</td>
+                    <td data-label="Equipo Intervenido" class="px-2 py-3 text-xs font-semibold text-slate-700 dark:text-slate-300 break-words">
                         <span class="flex items-start">
                             ${alertIndicator}
                             <span>${esc(item.EQUIPO)}${visitaBadge}</span>
                         </span>
                     </td>
-                    <td class="px-2 py-3 text-xs text-slate-600 dark:text-slate-400 leading-snug break-words">${esc(item.OBSERVACIONES) || '<span class="text-slate-400">—</span>'}</td>
-                    <td class="px-2 py-3 no-print">${pdfCell}</td>
+                    <td data-label="Observaciones" class="px-2 py-3 text-xs text-slate-600 dark:text-slate-400 leading-snug break-words">${formatObsHTML(item.OBSERVACIONES)}</td>
+                    <td data-label="Informe" class="px-2 py-3 no-print">${pdfCell}</td>
                 `;
                 tableBody.appendChild(tr);
             });
@@ -2506,6 +2754,7 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
             // Fila final: estado del listado + botón "Ver más" (de a 15)
             const mostrados = Math.min(servicesVisibleCount, ordenados.length);
             const trFooter = document.createElement('tr');
+            trFooter.className = 'table-footer-row';
             if (ordenados.length > servicesVisibleCount) {
                 const restantes = ordenados.length - servicesVisibleCount;
                 const siguiente = Math.min(15, restantes);
@@ -2644,6 +2893,526 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
             fillList('analisis-reco-costos', costos);
         }
 
+        // ===================== MÓDULO DE MANTENIMIENTO =====================
+        const PERIODICIDAD_MESES = { 'MENSUAL':1, 'BIMESTRAL':2, 'TRIMESTRAL':3, 'CUATRIMESTRAL':4, 'SEMESTRAL':6, 'ANUAL':12 };
+        function periodicidadMeses(p){
+            const k = (p||'').toUpperCase().trim();
+            for (const key in PERIODICIDAD_MESES) if (k.includes(key)) return PERIODICIDAD_MESES[key];
+            return null; // FUERA CONTRATO / DE BAJA / etc. => sin programa
+        }
+        function addMonths(date, m){ const d = new Date(date.getTime()); d.setMonth(d.getMonth()+m); return d; }
+        function fmtDate(d){ if(!d || isNaN(d)) return '-'; return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear(); }
+        function monthsAgoDate(n){ const d = new Date(); d.setMonth(d.getMonth()-n); return d; }
+        function escapeHtml(t){ return String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+        function escapeJs(t){ return String(t==null?'':t).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;'); }
+
+        // Categorías de servicio
+        function esUrgencia(s){ return /emergencia|urgencia/i.test(s.TIPO_VISITA||''); }
+        function esCorrectiva(s){ return /correctiv|reparacion|reparación/i.test(s.TIPO_VISITA||''); }
+        function esPreventiva(s){ return /preventiv/i.test(s.TIPO_VISITA||''); }
+        function conObservaciones(s){ return /con\s*observacion/i.test(s.ESTADO||''); }
+        function equipoKey(s){ return (s.ID_EQUIPO && String(s.ID_EQUIPO).trim()) || (s.EQUIPO||'').trim().toUpperCase(); }
+
+        // Divide el texto de observaciones en ítems numerables
+        function splitObservaciones(text){
+            if(!text) return [];
+            let t = String(text).trim();
+            let parts = t.split(/\n+/).map(x=>x.trim()).filter(Boolean);
+            if(parts.length <= 1){
+                parts = t.split(/(?<=[\.;])\s+(?=[A-ZÁÉÍÓÚÑ0-9¿])/).map(x=>x.trim()).filter(Boolean);
+            }
+            parts = parts.map(p => p.replace(/^\s*(\d+[\.\)]|[-•])\s*/,'').trim()).filter(Boolean);
+            return parts;
+        }
+        function formatObsHTML(text){
+            const parts = splitObservaciones(text);
+            if(parts.length === 0) return '<span class="text-slate-400">—</span>';
+            if(parts.length === 1) return escapeHtml(parts[0]);
+            return '<ol class="list-decimal list-inside space-y-0.5">' + parts.map(p=>`<li>${escapeHtml(p)}</li>`).join('') + '</ol>';
+        }
+        function formatObsText(text){
+            const parts = splitObservaciones(text);
+            if(parts.length === 0) return '';
+            if(parts.length === 1) return parts[0];
+            return parts.map((p,i)=>`${i+1}. ${p}`).join('\n');
+        }
+
+        // Filtros propios de la pestaña Mantenimiento (empresa/tipoEquipo son arrays; ubicacion string; fechas string)
+        let mantFilters = { empresa:[], tipoEquipo:[], ubicacion:'', equipo:'', fechaInicio:'', fechaFin:'' };
+        let MANT_MS_VALUES = { empresa:[], tipo:[] };
+
+        // Agrega los servicios por equipo (base para todas las tablas de mantenimiento)
+        function buildEquipoAggregates(){
+            const equiposPorId = {};
+            currentData.forEach(e => { const id = String(e.ID_EQUIPO).trim(); if(id) equiposPorId[id] = e; });
+            const ubicacionDe = (s) => { const inv = equiposPorId[String(s.ID_EQUIPO).trim()]; return inv ? inv.UBICACION : (s.UBICACION||''); };
+
+            // Ventana temporal: rango de fechas si está definido; si no, últimos 12 meses
+            const winStart = mantFilters.fechaInicio ? new Date(mantFilters.fechaInicio + 'T00:00:00') : monthsAgoDate(12);
+            const winEnd = mantFilters.fechaFin ? new Date(mantFilters.fechaFin + 'T23:59:59') : new Date(8640000000000000);
+            const dateOK = (d) => (!mantFilters.fechaInicio || d >= winStart) && (!mantFilters.fechaFin || d <= winEnd);
+
+            const empSel = mantFilters.empresa || [];
+            const tipoSel = mantFilters.tipoEquipo || [];
+            const pasaFiltro = (s) => {
+                if(empSel.length && !empSel.includes(s.EMPRESA)) return false;
+                if(tipoSel.length && !tipoSel.includes(s.TIPO_EQUIPO)) return false;
+                if(mantFilters.ubicacion && ubicacionDe(s) !== mantFilters.ubicacion) return false;
+                if(mantFilters.equipo && (s.EQUIPO||'').trim() !== mantFilters.equipo) return false;
+                return true;
+            };
+            const servs = currentServices.filter(s => s.FECHA && pasaFiltro(s) && dateOK(parseServiceDate(s.FECHA))).map(s => ({ s, d: parseServiceDate(s.FECHA) }));
+            servs.sort((a,b) => a.d - b.d); // ascendente: el último queda al final
+            const eq = {};
+            servs.forEach(({s, d}) => {
+                const k = equipoKey(s);
+                const inv = equiposPorId[String(s.ID_EQUIPO).trim()];
+                if(!eq[k]) eq[k] = { nombre:s.EQUIPO, empresa:s.EMPRESA, ubicacion: inv ? inv.UBICACION : (s.UBICACION||'-'),
+                    periodicidad: inv ? inv.PERIODICIDAD : '', idEquipo:s.ID_EQUIPO,
+                    urg12:0, corr12:0, corrByMonth:{}, ultimaPrev:null, ultimaPrevObs:'', ultimoServicio:null, ultimoDate:null };
+                const e = eq[k];
+                if(s.EMPRESA) e.empresa = s.EMPRESA;
+                e.ultimoServicio = s; e.ultimoDate = d;
+                if(d >= winStart && d <= winEnd){
+                    if(esUrgencia(s)) e.urg12++;
+                    if(esCorrectiva(s)){ e.corr12++; const mk = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); e.corrByMonth[mk] = (e.corrByMonth[mk]||0)+1; }
+                }
+                if(esPreventiva(s)){ e.ultimaPrev = d; e.ultimaPrevObs = s.OBSERVACIONES; }
+            });
+            return Object.values(eq);
+        }
+
+        // Etiquetas de los últimos 12 meses (YYYY-MM + nombre corto)
+        function ultimos12Meses(){
+            const arr = [];
+            const meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+            const base = new Date(); base.setDate(1);
+            for(let i=11;i>=0;i--){ const d = new Date(base.getFullYear(), base.getMonth()-i, 1); arr.push({ key: d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'), label: meses[d.getMonth()]+' '+String(d.getFullYear()).slice(2) }); }
+            return arr;
+        }
+
+        function criticidadNivel(n){
+            if(n >= 5) return { txt:'Alta', cls:'bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-300' };
+            if(n >= 2) return { txt:'Media', cls:'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300' };
+            return { txt:'Baja', cls:'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300' };
+        }
+
+        // Estado de cumplimiento (vigentes / vencen este mes / vencidos). Devuelve conteos + listas por categoría.
+        function computeCumplimiento(useMantFilters){
+            const hoy = new Date(); hoy.setHours(0,0,0,0);
+            const finMes = new Date(hoy.getFullYear(), hoy.getMonth()+1, 0); finMes.setHours(23,59,59,999);
+            const hace30 = new Date(hoy.getTime() - 30*86400000);
+            const equiposPorId = {}; currentData.forEach(e=>{ const id=String(e.ID_EQUIPO).trim(); if(id) equiposPorId[id]=e; });
+            const empSel = mantFilters.empresa||[], tipoSel = mantFilters.tipoEquipo||[];
+            const lastPrev = {};
+            currentServices.forEach(s=>{
+                if(!s.FECHA || !esPreventiva(s)) return;
+                if(useMantFilters){
+                    if(empSel.length && !empSel.includes(s.EMPRESA)) return;
+                    if(tipoSel.length && !tipoSel.includes(s.TIPO_EQUIPO)) return;
+                    if(mantFilters.equipo && (s.EQUIPO||'').trim()!==mantFilters.equipo) return;
+                }
+                const k=equipoKey(s); const d=parseServiceDate(s.FECHA);
+                if(!lastPrev[k] || d>lastPrev[k].d) lastPrev[k]={ d, idEquipo:s.ID_EQUIPO, empresa:s.EMPRESA, equipo:s.EQUIPO };
+            });
+            const res = { vig:0, mes:0, v30:0, v30p:0, listas:{ vig:[], mes:[], v30:[], v30p:[] } };
+            Object.values(lastPrev).forEach(p=>{
+                const e = equiposPorId[String(p.idEquipo).trim()];
+                const meses = periodicidadMeses(e ? e.PERIODICIDAD : '');
+                if(!meses) return;
+                if(useMantFilters && mantFilters.ubicacion && (!e || e.UBICACION!==mantFilters.ubicacion)) return;
+                const next = addMonths(p.d, meses);
+                const item = { equipo:p.equipo, empresa:p.empresa, ubicacion: e?e.UBICACION:'-', ultima:p.d, prox:next };
+                let cat;
+                if(next > finMes) cat='vig'; else if(next >= hoy) cat='mes'; else if(next >= hace30) cat='v30'; else cat='v30p';
+                res[cat]++; res.listas[cat].push(item);
+            });
+            return res;
+        }
+        let _cumplData = null;
+        function updateCumplimientoChart(){
+            if(!charts.cumplimiento) return;
+            const c = computeCumplimiento(false);
+            _cumplData = c;
+            charts.cumplimiento.data.datasets[0].data = [c.vig, c.mes, c.v30, c.v30p];
+            charts.cumplimiento.update('active');
+            const set = (id,v)=>{ const el=document.getElementById(id); if(el) el.innerText=v; };
+            set('cumpl-vigentes', c.vig); set('cumpl-mes', c.mes); set('cumpl-venc30', c.v30); set('cumpl-venc30plus', c.v30p);
+        }
+        // Drilldown del Home: muestra el detalle de la categoría de cumplimiento elegida
+        function showCumplimientoDetalle(cat){
+            if(!_cumplData) _cumplData = computeCumplimiento(false);
+            const titulos = { vig:'Vigentes', mes:'Vencen este mes', v30:'Vencidos ≤ 30 días', v30p:'Vencidos > 30 días' };
+            const lista = (_cumplData.listas[cat]||[]).slice().sort((a,b)=> a.prox - b.prox);
+            const cont = document.getElementById('cumpl-detalle-lista');
+            const tit = document.getElementById('cumpl-detalle-titulo');
+            const wrap = document.getElementById('cumpl-detalle');
+            if(!cont || !wrap) return;
+            tit.innerText = `${titulos[cat]} (${lista.length})`;
+            cont.innerHTML = lista.length ? lista.map(i=>
+                `<div class="flex items-center justify-between gap-2 py-1 border-b border-slate-100 dark:border-slate-800/50">
+                    <div class="min-w-0"><div class="font-semibold text-slate-700 dark:text-slate-200 truncate">${escapeHtml(i.equipo)}</div>
+                    <div class="text-[10px] text-slate-400 truncate">${escapeHtml(i.empresa)} · ${escapeHtml(i.ubicacion)}</div></div>
+                    <div class="text-right flex-shrink-0"><div class="text-slate-500">Próx: <strong>${fmtDate(i.prox)}</strong></div></div>
+                </div>`
+            ).join('') : '<p class="text-slate-400 py-2">Sin equipos en esta categoría</p>';
+            wrap.classList.remove('hidden');
+        }
+
+        // --- Multiselección para los filtros de Mantenimiento (empresa / tipo) ---
+        const MANT_MS_PROP = { empresa:'empresa', tipo:'tipoEquipo' };
+        function mantBuildPanel(key, values){
+            const panel = document.getElementById(`ms-mant-${key}-panel`); if(!panel) return;
+            MANT_MS_VALUES[key] = values.slice();
+            const prop = MANT_MS_PROP[key];
+            const selected = mantFilters[prop] || [];
+            panel.innerHTML = '';
+            const header = document.createElement('div');
+            header.className = "sticky top-0 bg-white dark:bg-slate-900 flex items-center justify-between gap-2 px-2 py-1.5 mb-1 border-b border-slate-100 dark:border-slate-800";
+            header.innerHTML = `<button type="button" class="text-xs font-bold text-primary-600 hover:text-primary-700">Seleccionar todas</button>
+                <button type="button" class="text-xs font-semibold text-slate-400 hover:text-rose-500">Limpiar</button>`;
+            const [bAll, bClear] = header.querySelectorAll('button');
+            bAll.addEventListener('click', () => { mantFilters[prop] = (MANT_MS_VALUES[key]||[]).slice(); mantApply(); });
+            bClear.addEventListener('click', () => { mantFilters[prop] = []; mantApply(); });
+            panel.appendChild(header);
+            values.forEach(val => {
+                const label = document.createElement('label');
+                label.className = "flex items-center space-x-2 px-2 py-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer text-sm text-slate-700 dark:text-slate-200";
+                label.innerHTML = `<input type="checkbox" value="${escapeHtml(val)}" ${selected.includes(val)?'checked':''} class="w-4 h-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500"><span class="truncate">${escapeHtml(val)}</span>`;
+                label.querySelector('input').addEventListener('change', (e) => {
+                    const set = new Set(mantFilters[prop] || []);
+                    if(e.target.checked) set.add(val); else set.delete(val);
+                    mantFilters[prop] = [...set]; mantApply();
+                });
+                panel.appendChild(label);
+            });
+            mantUpdateLabel(key);
+        }
+        function mantUpdateLabel(key){
+            const prop = MANT_MS_PROP[key];
+            const arr = mantFilters[prop] || [];
+            const el = document.getElementById(`ms-mant-${key}-label`); if(!el) return;
+            const def = key==='empresa' ? 'Todas las Empresas' : 'Todos los Tipos';
+            const total = (MANT_MS_VALUES[key]||[]).length;
+            if(arr.length === 0) el.innerText = def;
+            else if(total && arr.length === total) el.innerText = `Todas (${total})`;
+            else if(arr.length === 1) el.innerText = arr[0];
+            else el.innerText = `${arr.length} seleccionados`;
+        }
+        function mantToggleMs(key){
+            const panel = document.getElementById(`ms-mant-${key}-panel`); if(!panel) return;
+            const willOpen = panel.classList.contains('hidden');
+            document.querySelectorAll('.multiselect-panel').forEach(p => p.classList.add('hidden'));
+            if(willOpen) panel.classList.remove('hidden');
+        }
+        // Aplica cambios de los filtros de mantenimiento (persistir + recalcular)
+        function mantApply(){
+            localStorage.setItem('mant_filters', JSON.stringify(mantFilters));
+            computeMaintenance();
+        }
+
+        // Rellena los controles de filtros de mantenimiento (conservando la selección)
+        function populateMantFilters(){
+            const empresas = [...new Set(currentServices.map(s=>(s.EMPRESA||'').trim()).filter(v=>v && v!=='SIN EMPRESA'))].sort();
+            const tipos = [...new Set(currentServices.map(s=>(s.TIPO_EQUIPO||'').trim()).filter(Boolean))].sort();
+            const ubicaciones = [...new Set(currentData.map(e=>(e.UBICACION||'').trim()).filter(Boolean))].sort();
+            mantBuildPanel('empresa', empresas);
+            mantBuildPanel('tipo', tipos);
+            const sel = document.getElementById('mant-filter-ubicacion');
+            if(sel){
+                sel.innerHTML = `<option value="">Todas las Ubicaciones</option>` + ubicaciones.map(v=>`<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('');
+                sel.value = ubicaciones.includes(mantFilters.ubicacion) ? mantFilters.ubicacion : '';
+            }
+            const fi = document.getElementById('mant-filter-fecha-inicio'); if(fi) fi.value = mantFilters.fechaInicio || '';
+            const ff = document.getElementById('mant-filter-fecha-fin'); if(ff) ff.value = mantFilters.fechaFin || '';
+        }
+        function handleMantFilterChange(){
+            mantFilters.ubicacion = document.getElementById('mant-filter-ubicacion').value;
+            mantFilters.fechaInicio = document.getElementById('mant-filter-fecha-inicio').value;
+            mantFilters.fechaFin = document.getElementById('mant-filter-fecha-fin').value;
+            mantApply();
+        }
+        function resetMantFilters(){
+            mantFilters = { empresa:[], tipoEquipo:[], ubicacion:'', equipo:'', fechaInicio:'', fechaFin:'' };
+            localStorage.setItem('mant_filters', JSON.stringify(mantFilters));
+            computeMaintenance();
+        }
+        function loadMantFilters(){
+            const saved = localStorage.getItem('mant_filters');
+            if(saved){ try {
+                const def = { empresa:[], tipoEquipo:[], ubicacion:'', equipo:'', fechaInicio:'', fechaFin:'' };
+                mantFilters = Object.assign(def, JSON.parse(saved));
+                if(!Array.isArray(mantFilters.empresa)) mantFilters.empresa = mantFilters.empresa ? [mantFilters.empresa] : [];
+                if(!Array.isArray(mantFilters.tipoEquipo)) mantFilters.tipoEquipo = mantFilters.tipoEquipo ? [mantFilters.tipoEquipo] : [];
+            } catch(e){} }
+        }
+
+        let _mantExportRows = [];
+        let _critList = [], _noopList = [], _servTipoLabels = [], _noopEmpresas = [];
+        const mantExpand = {}; // estado de expansión por tabla
+
+        // Renderiza un tbody con expansión (muestra "initial" filas + botón "Ver todos")
+        function renderExpandableRows(tbodyId, rowsHtml, colspan, initial){
+            const tb = document.getElementById(tbodyId); if(!tb) return;
+            if(rowsHtml.length === 0){ tb.innerHTML = `<tr><td colspan="${colspan}" class="px-3 py-4 text-center text-xs text-slate-400">Sin datos</td></tr>`; return; }
+            const expanded = !!mantExpand[tbodyId];
+            const shown = expanded ? rowsHtml.length : Math.min(initial, rowsHtml.length);
+            let html = rowsHtml.slice(0, shown).join('');
+            if(rowsHtml.length > initial){
+                const label = expanded ? 'Ver menos' : `Ver todos (${rowsHtml.length})`;
+                const icon = expanded ? 'chevron-up' : 'chevron-down';
+                html += `<tr class="table-footer-row"><td colspan="${colspan}" class="px-3 py-3 text-center bg-slate-50 dark:bg-slate-900/40">
+                    <button onclick="toggleMantExpand('${tbodyId}')" class="inline-flex items-center space-x-1.5 bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg text-xs font-bold no-print">
+                    <i data-lucide="${icon}" class="w-3.5 h-3.5"></i><span>${label}</span></button></td></tr>`;
+            }
+            tb.innerHTML = html;
+        }
+        function toggleMantExpand(id){ mantExpand[id] = !mantExpand[id]; computeMaintenance(); }
+
+        // Cross-filter: clic en gráfico/fila => filtra por equipo en toda la pestaña
+        function setMantEquipoFilter(name){
+            mantFilters.equipo = (mantFilters.equipo === name) ? '' : name;
+            mantApply();
+        }
+        function toggleMantTipoFilter(name){
+            const set = new Set(mantFilters.tipoEquipo || []);
+            if(set.has(name)) set.delete(name); else set.add(name);
+            mantFilters.tipoEquipo = [...set];
+            mantApply();
+        }
+        function toggleMantEmpresaFilter(name){
+            const set = new Set(mantFilters.empresa || []);
+            if(set.has(name)) set.delete(name); else set.add(name);
+            mantFilters.empresa = [...set];
+            mantApply();
+        }
+        // Chips de filtros activos por clic (equipo)
+        function renderMantChips(){
+            const cont = document.getElementById('mant-active-chips'); if(!cont) return;
+            const chips = [];
+            if(mantFilters.equipo) chips.push(`<span class="inline-flex items-center space-x-1.5 bg-sky-100 dark:bg-sky-950/40 text-primary-600 dark:text-sky-300 px-2.5 py-1 rounded-lg text-xs font-semibold"><span>Equipo: <strong>${escapeHtml(mantFilters.equipo)}</strong></span><button onclick="mantFilters.equipo='';mantApply();" class="hover:text-rose-500 font-bold ml-1">✕</button></span>`);
+            cont.innerHTML = chips.join('');
+            cont.classList.toggle('hidden', chips.length === 0);
+            cont.classList.toggle('flex', chips.length > 0);
+        }
+
+        // Calcula y renderiza todo lo de la pestaña Mantenimiento
+        function computeMaintenance(){
+            if(!document.getElementById('mant-criticidad-body')) return;
+            populateMantFilters();
+            renderMantChips();
+            const list = buildEquipoAggregates();
+            const hoy = new Date(); hoy.setHours(0,0,0,0);
+            const meses12 = ultimos12Meses();
+
+            // ===== CRITICIDAD (top 10 por urgencias) — tabla con Empresa =====
+            const crit = list.filter(e=>e.urg12>0).sort((a,b)=>b.urg12-a.urg12).slice(0,10);
+            _critList = crit;
+            const critRows = crit.map(e=>{
+                const nv = criticidadNivel(e.urg12);
+                return `<tr class="cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-900/40" onclick="setMantEquipoFilter('${escapeJs(e.nombre)}')">
+                    <td data-label="Equipo" class="px-3 py-2 text-xs font-semibold text-slate-800 dark:text-slate-200 break-words">${escapeHtml(e.nombre)}</td>
+                    <td data-label="Empresa" class="px-3 py-2 text-xs text-slate-500 break-words">${escapeHtml(e.empresa)}</td>
+                    <td data-label="Urgencias" class="px-3 py-2 text-xs font-bold">${e.urg12}</td>
+                    <td data-label="Criticidad" class="px-3 py-2"><span class="inline-flex px-2 py-0.5 rounded-full text-[11px] font-bold ${nv.cls}">${nv.txt}</span></td></tr>`;
+            });
+            renderExpandableRows('mant-criticidad-body', critRows, 4, 10);
+            if(charts.criticidad){
+                charts.criticidad.data.labels = crit.map(e=>e.nombre);
+                charts.criticidad.data.datasets = [{ label:'Urgencias', data: crit.map(e=>e.urg12),
+                    backgroundColor: crit.map(e=> e.urg12>=5 ? '#f43f5e' : (e.urg12>=2 ? '#f59e0b' : '#10b981')), borderRadius:6 }];
+                charts.criticidad.update('active');
+            }
+
+            // ===== TENDENCIA DE FALLAS (correctivas) — heatmap + tabla =====
+            const tend = list.filter(e=>e.corr12>0).sort((a,b)=>b.corr12-a.corr12);
+            const tendTop = tend.slice(0,20);
+            const tendRows = tend.map(e=>
+                `<tr class="cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-900/40" onclick="setMantEquipoFilter('${escapeJs(e.nombre)}')">
+                    <td data-label="Equipo" class="px-3 py-2 text-xs font-semibold text-slate-800 dark:text-slate-200 break-words">${escapeHtml(e.nombre)}</td>
+                    <td data-label="Empresa" class="px-3 py-2 text-xs text-slate-500 break-words">${escapeHtml(e.empresa)}</td>
+                    <td data-label="Fallas" class="px-3 py-2 text-xs font-bold text-rose-600 dark:text-rose-400">${e.corr12}</td></tr>`
+            );
+            renderExpandableRows('mant-tendencia-body', tendRows, 3, 10);
+            renderHeatmap(tendTop, meses12);
+
+            // ===== PRÓXIMAS MANTENCIONES =====
+            const proximas = [];
+            list.forEach(e=>{
+                const meses = periodicidadMeses(e.periodicidad);
+                if(!e.ultimaPrev || !meses) return;
+                proximas.push({ ...e, meses, prox: addMonths(e.ultimaPrev, meses) });
+            });
+            proximas.sort((a,b)=> a.prox - b.prox);
+            const proxRows = proximas.map(e=>
+                `<tr><td data-label="Empresa / Cliente" class="px-3 py-2 text-xs font-semibold text-slate-800 dark:text-slate-200 break-words">${escapeHtml(e.empresa)}</td>
+                    <td data-label="Equipo" class="px-3 py-2 text-xs text-slate-700 dark:text-slate-300 break-words">${escapeHtml(e.nombre)}</td>
+                    <td data-label="Periodicidad" class="px-3 py-2 text-xs">${escapeHtml(e.periodicidad)}</td>
+                    <td data-label="Última preventiva" class="px-3 py-2 text-xs text-slate-500">${fmtDate(e.ultimaPrev)} <span class="text-emerald-500">(preventiva)</span></td>
+                    <td data-label="Próxima mantención" class="px-3 py-2 text-xs font-bold ${e.prox < hoy ? 'text-rose-600 dark:text-rose-400' : 'text-slate-900 dark:text-white'}">${fmtDate(e.prox)}</td></tr>`
+            );
+            renderExpandableRows('mant-proximas-body', proxRows, 5, 8);
+
+            // Tabla exportación (expandible)
+            _mantExportRows = proximas.map(e=>({
+                cliente:e.empresa, ubicacion:e.ubicacion, equipo:e.nombre, periodicidad:e.periodicidad,
+                observaciones: formatObsText(e.ultimaPrevObs), ultima: fmtDate(e.ultimaPrev), proxima: fmtDate(e.prox)
+            }));
+            const expRows = proximas.map(e=>
+                `<tr><td data-label="Cliente" class="px-3 py-2 text-xs font-semibold text-slate-800 dark:text-slate-200 break-words">${escapeHtml(e.empresa)}</td>
+                    <td data-label="Ubicación" class="px-3 py-2 text-xs text-slate-500 break-words">${escapeHtml(e.ubicacion)}</td>
+                    <td data-label="Equipo" class="px-3 py-2 text-xs break-words">${escapeHtml(e.nombre)}</td>
+                    <td data-label="Periodicidad" class="px-3 py-2 text-xs">${escapeHtml(e.periodicidad)}</td>
+                    <td data-label="Observaciones" class="px-3 py-2 text-xs text-slate-600 dark:text-slate-400 break-words">${formatObsHTML(e.ultimaPrevObs)}</td>
+                    <td data-label="Última mantención" class="px-3 py-2 text-xs text-slate-500">${fmtDate(e.ultimaPrev)}</td>
+                    <td data-label="Próxima programada" class="px-3 py-2 text-xs font-bold">${fmtDate(e.prox)}</td></tr>`
+            );
+            renderExpandableRows('mant-export-body', expRows, 7, 8);
+
+            // Gráfico próximos mantenimientos por mes
+            if(charts.proximos){
+                const mn = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+                const buckets = {}; const labels = [];
+                const base = new Date(); base.setDate(1);
+                for(let i=0;i<12;i++){ const d=new Date(base.getFullYear(), base.getMonth()+i, 1); const k=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); buckets[k]=0; labels.push({k, label: mn[d.getMonth()]+' '+String(d.getFullYear()).slice(2)}); }
+                proximas.forEach(e=>{ const k=e.prox.getFullYear()+'-'+String(e.prox.getMonth()+1).padStart(2,'0'); if(k in buckets) buckets[k]++; });
+                charts.proximos.data.labels = labels.map(l=>l.label);
+                charts.proximos.data.datasets = [{ label:'Mantenciones', data: labels.map(l=>buckets[l.k]), backgroundColor:'#0ea5e9', borderRadius:6 }];
+                charts.proximos.update('active');
+            }
+
+            // Gráfico servicios por tipo de equipo (cuenta servicios filtrados en la ventana)
+            if(charts.servtipo){
+                const cont = {};
+                buildFilteredServices().forEach(s=>{ const t=(s.TIPO_EQUIPO||'OTROS').trim(); cont[t]=(cont[t]||0)+1; });
+                const sorted = Object.entries(cont).sort((a,b)=>b[1]-a[1]);
+                _servTipoLabels = sorted.map(x=>x[0]);
+                charts.servtipo.data.labels = sorted.map(x=>x[0]);
+                charts.servtipo.data.datasets = [{ label:'Servicios', data: sorted.map(x=>x[1]),
+                    backgroundColor: sorted.map(x=> (mantFilters.tipoEquipo||[]).includes(x[0]) ? '#10b981' : 'rgba(16,185,129,0.7)'), borderRadius:6 }];
+                charts.servtipo.update('active');
+            }
+
+            // Gráfico cumplimiento (respeta filtros de mantenimiento)
+            if(charts.mantCumpl){
+                const c = computeCumplimiento(true);
+                charts.mantCumpl.data.datasets[0].data = [c.vig, c.mes, c.v30, c.v30p];
+                charts.mantCumpl.update('active');
+            }
+
+            // ===== EQUIPOS NO OPERATIVOS — orden desc por días + gráfico =====
+            const noOp = list.filter(e=> e.ultimoServicio && e.ultimoServicio.OPERATIVO === false)
+                .map(e=>({ ...e, dias: Math.max(0, Math.round((hoy - e.ultimoDate)/86400000)) }))
+                .sort((a,b)=> b.dias - a.dias);
+            _noopList = noOp;
+            const noopRows = noOp.map(e=>
+                `<tr class="cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-900/40" onclick="setMantEquipoFilter('${escapeJs(e.nombre)}')">
+                    <td data-label="Cliente" class="px-3 py-2 text-xs font-semibold text-slate-800 dark:text-slate-200 break-words">${escapeHtml(e.empresa)}</td>
+                    <td data-label="Equipo" class="px-3 py-2 text-xs break-words">${escapeHtml(e.nombre)}</td>
+                    <td data-label="Ubicación" class="px-3 py-2 text-xs text-slate-500 break-words">${escapeHtml(e.ubicacion)}</td>
+                    <td data-label="Fecha" class="px-3 py-2 text-xs">${fmtDate(e.ultimoDate)}</td>
+                    <td data-label="Días" class="px-3 py-2 text-xs font-bold text-rose-600 dark:text-rose-400">${e.dias}</td></tr>`
+            );
+            renderExpandableRows('mant-nooperativos-body', noopRows, 5, 8);
+            if(charts.noop){
+                // Agrupar por empresa: total de días no operativo y cantidad de equipos
+                const porEmp = {};
+                noOp.forEach(e=>{ const emp = e.empresa || 'SIN EMPRESA'; if(!porEmp[emp]) porEmp[emp]={dias:0, eq:0}; porEmp[emp].dias += e.dias; porEmp[emp].eq++; });
+                const sorted = Object.entries(porEmp).sort((a,b)=> b[1].dias - a[1].dias).slice(0,12);
+                _noopEmpresas = sorted.map(x=>x[0]);
+                charts.noop.data.labels = sorted.map(x=> x[0].length>26 ? x[0].slice(0,26)+'…' : x[0]);
+                charts.noop.data.datasets = [{ label:'Días no operativo', data: sorted.map(x=>x[1].dias),
+                    backgroundColor:'#f43f5e', borderRadius:6,
+                    _eq: sorted.map(x=>x[1].eq) }];
+                charts.noop.update('active');
+            }
+
+            // ===== EQUIPOS CON OBSERVACIONES PENDIENTES (expandible) =====
+            const conObs = list.filter(e=> e.ultimoServicio && conObservaciones(e.ultimoServicio))
+                .sort((a,b)=> b.ultimoDate - a.ultimoDate);
+            const obsRows = conObs.map(e=>
+                `<tr><td data-label="Cliente" class="px-3 py-2 text-xs font-semibold text-slate-800 dark:text-slate-200 break-words">${escapeHtml(e.empresa)}</td>
+                    <td data-label="Equipo" class="px-3 py-2 text-xs break-words">${escapeHtml(e.nombre)}</td>
+                    <td data-label="Ubicación" class="px-3 py-2 text-xs text-slate-500 break-words">${escapeHtml(e.ubicacion)}</td>
+                    <td data-label="Observación pendiente" class="px-3 py-2 text-xs text-slate-600 dark:text-slate-400 break-words">${formatObsHTML(e.ultimoServicio.OBSERVACIONES)}</td></tr>`
+            );
+            renderExpandableRows('mant-observaciones-body', obsRows, 4, 6);
+
+            lucide.createIcons();
+        }
+
+        // Servicios que pasan los filtros de mantenimiento (para el gráfico por tipo)
+        function buildFilteredServices(){
+            const equiposPorId = {}; currentData.forEach(e=>{ const id=String(e.ID_EQUIPO).trim(); if(id) equiposPorId[id]=e; });
+            const winStart = mantFilters.fechaInicio ? new Date(mantFilters.fechaInicio + 'T00:00:00') : monthsAgoDate(12);
+            const winEnd = mantFilters.fechaFin ? new Date(mantFilters.fechaFin + 'T23:59:59') : new Date(8640000000000000);
+            const empSel = mantFilters.empresa || [], tipoSel = mantFilters.tipoEquipo || [];
+            const ubicacionDe = (s)=>{ const inv=equiposPorId[String(s.ID_EQUIPO).trim()]; return inv?inv.UBICACION:(s.UBICACION||''); };
+            return currentServices.filter(s=>{
+                if(!s.FECHA) return false;
+                const d = parseServiceDate(s.FECHA);
+                if(mantFilters.fechaInicio && d<winStart) return false;
+                if(mantFilters.fechaFin && d>winEnd) return false;
+                if(empSel.length && !empSel.includes(s.EMPRESA)) return false;
+                if(tipoSel.length && !tipoSel.includes(s.TIPO_EQUIPO)) return false;
+                if(mantFilters.ubicacion && ubicacionDe(s)!==mantFilters.ubicacion) return false;
+                if(mantFilters.equipo && (s.EQUIPO||'').trim()!==mantFilters.equipo) return false;
+                return true;
+            });
+        }
+
+        // Mapa de calor de fallas correctivas: filas=equipos, columnas=meses
+        function renderHeatmap(equipos, meses12){
+            const cont = document.getElementById('mant-heatmap'); if(!cont) return;
+            if(!equipos.length){ cont.innerHTML = '<p class="text-xs text-slate-400 py-8 text-center">Sin fallas correctivas en el período</p>'; return; }
+            let max = 1;
+            equipos.forEach(e=> meses12.forEach(m=>{ const v=e.corrByMonth[m.key]||0; if(v>max) max=v; }));
+            let html = '<table class="border-collapse"><thead><tr><th class="sticky left-0 bg-white dark:bg-slate-950 text-left px-2 py-1 text-[10px] text-slate-400 font-semibold">Equipo</th>';
+            meses12.forEach(m=> html += `<th class="px-1 py-1 text-[9px] text-slate-400 font-semibold text-center">${m.label}</th>`);
+            html += '</tr></thead><tbody>';
+            equipos.forEach(e=>{
+                html += `<tr class="cursor-pointer" onclick="setMantEquipoFilter('${escapeJs(e.nombre)}')"><td class="sticky left-0 bg-white dark:bg-slate-950 px-2 py-1 text-[10px] font-semibold text-slate-700 dark:text-slate-200 whitespace-nowrap" title="${escapeHtml(e.empresa)}">${escapeHtml(e.nombre.length>20?e.nombre.slice(0,20)+'…':e.nombre)}<span class="block text-[8px] text-slate-400 font-normal">${escapeHtml(e.empresa)}</span></td>`;
+                meses12.forEach(m=>{
+                    const v = e.corrByMonth[m.key]||0;
+                    const alpha = v===0 ? 0 : (0.15 + 0.85*(v/max));
+                    const bg = v===0 ? 'transparent' : `rgba(244,63,94,${alpha.toFixed(2)})`;
+                    const col = v===0 ? '#cbd5e1' : (alpha>0.55?'#fff':'#7f1d1d');
+                    html += `<td class="text-center text-[9px] font-bold" style="background:${bg};color:${col};min-width:26px;height:24px;border:1px solid rgba(148,163,184,0.12)">${v||''}</td>`;
+                });
+                html += '</tr>';
+            });
+            html += '</tbody></table>';
+            cont.innerHTML = html;
+        }
+
+        // Exporta las mantenciones como TABLA imprimible (no CSV)
+        function exportMantenciones(){
+            if(!_mantExportRows.length){ showToast("No hay mantenciones para exportar", "alert-triangle", "bg-amber-500 text-white"); return; }
+            const filtroTxt = [
+                (mantFilters.empresa||[]).length ? 'Empresa: '+mantFilters.empresa.join(', ') : '',
+                (mantFilters.tipoEquipo||[]).length ? 'Tipo: '+mantFilters.tipoEquipo.join(', ') : '',
+                mantFilters.ubicacion ? 'Ubicación: '+mantFilters.ubicacion : '',
+                mantFilters.equipo ? 'Equipo: '+mantFilters.equipo : ''
+            ].filter(Boolean).join(' · ');
+            const rows = _mantExportRows.map(r=>`<tr>
+                <td>${escapeHtml(r.cliente)}</td><td>${escapeHtml(r.ubicacion)}</td><td>${escapeHtml(r.equipo)}</td>
+                <td>${escapeHtml(r.periodicidad)}</td><td>${(splitObservaciones(r.observaciones).map((p,i)=>`${i+1}. ${escapeHtml(p)}`).join('<br>'))||'-'}</td>
+                <td>${escapeHtml(r.ultima)}</td><td>${escapeHtml(r.proxima)}</td></tr>`).join('');
+            const win = window.open('', '_blank');
+            win.document.write(`<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><title>Mantenciones Programadas</title>
+                <style>body{font-family:Arial,sans-serif;padding:24px;color:#0f172a}h1{font-size:18px;margin:0 0 4px}p.sub{color:#64748b;font-size:12px;margin:0 0 16px}
+                table{width:100%;border-collapse:collapse;font-size:11px}th,td{border:1px solid #cbd5e1;padding:6px 8px;text-align:left;vertical-align:top}
+                th{background:#f1f5f9;text-transform:uppercase;font-size:10px;letter-spacing:.04em}tr:nth-child(even){background:#f8fafc}
+                @media print{.noprint{display:none}}</style></head><body>
+                <h1>Mantenciones Programadas</h1>
+                <p class="sub">Generado: ${new Date().toLocaleString('es-CL')} ${filtroTxt?(' — '+escapeHtml(filtroTxt)):''} — Total: ${_mantExportRows.length}</p>
+                <button class="noprint" onclick="window.print()" style="margin-bottom:12px;padding:8px 14px;background:#0284c7;color:#fff;border:none;border-radius:6px;cursor:pointer">Imprimir / Guardar PDF</button>
+                <table><thead><tr><th>Cliente</th><th>Ubicación</th><th>Equipo</th><th>Periodicidad</th><th>Observaciones</th><th>Última mantención</th><th>Próxima programada</th></tr></thead>
+                <tbody>${rows}</tbody></table></body></html>`);
+            win.document.close();
+            showToast("Tabla de mantenciones generada", "printer", "bg-emerald-600 text-white");
+        }
+
         // --- CREACIÓN E INICIALIZACIÓN DE GRÁFICOS (CHART.JS) ---
         function initCharts() {
             Chart.defaults.font.family = "'Inter', sans-serif";
@@ -2698,21 +3467,17 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
                 }
             });
 
-            // 2. Marcas Principales (Horizontal Bar)
-            const ctxMarcas = document.getElementById('chart-marcas').getContext('2d');
-            charts.marcas = new Chart(ctxMarcas, {
-                type: 'bar',
-                data: { labels: [], datasets: [] },
+            // 2. Estado de Cumplimiento de Mantenimiento (Doughnut, interactivo)
+            const ctxCumpl = document.getElementById('chart-cumplimiento').getContext('2d');
+            charts.cumplimiento = new Chart(ctxCumpl, {
+                type: 'doughnut',
+                data: { labels: ['Vigentes', 'Vencen este mes', 'Vencidos ≤30d', 'Vencidos >30d'], datasets: [{ data: [0,0,0,0], backgroundColor: ['#10b981','#f59e0b','#f97316','#f43f5e'], borderWidth: 2, borderColor: '#ffffff' }] },
                 options: {
-                    indexAxis: 'y',
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: { legend: { display: false } },
-                    scales: {
-                        x: { beginAtZero: true, grid: { color: 'rgba(148, 163, 184, 0.1)' } },
-                        y: { grid: { display: false } }
-                    },
-                    ...makeInteractive('chart-marcas', 'marca')
+                    cutout: '60%',
+                    onClick: (ev, els) => { if(els && els.length){ showCumplimientoDetalle(['vig','mes','v30','v30p'][els[0].index]); } }
                 }
             });
 
@@ -2729,22 +3494,6 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
                     },
                     cutout: '65%',
                     ...makeInteractive('chart-ubicaciones', 'ubicacion')
-                }
-            });
-
-            // 4. Estado de Mantenimiento / Periodicidad (Line)
-            const ctxPeriodicidad = document.getElementById('chart-periodicidades').getContext('2d');
-            charts.periodicidad = new Chart(ctxPeriodicidad, {
-                type: 'line',
-                data: { labels: [], datasets: [] },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        y: { beginAtZero: true, grid: { color: 'rgba(148, 163, 184, 0.1)' } },
-                        x: { grid: { display: false } }
-                    }
                 }
             });
 
@@ -2780,6 +3529,60 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
                     ...makeInteractive('chart-servicios-equipo', 'tipoEquipo')
                 }
             });
+
+            // 7. Criticidad de Equipos (Bar horizontal, interactivo) — pestaña Mantenimiento
+            charts.criticidad = new Chart(document.getElementById('chart-criticidad').getContext('2d'), {
+                type: 'bar',
+                data: { labels: [], datasets: [] },
+                options: {
+                    indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { x: { beginAtZero: true, grid: { color: 'rgba(148,163,184,0.1)' } }, y: { grid: { display: false } } },
+                    onClick: (ev, els) => { if(els && els.length && _critList[els[0].index]) setMantEquipoFilter(_critList[els[0].index].nombre); }
+                }
+            });
+
+            // 8. Próximos Mantenimientos por mes (Bar)
+            charts.proximos = new Chart(document.getElementById('chart-proximos').getContext('2d'), {
+                type: 'bar',
+                data: { labels: [], datasets: [] },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true, grid: { color: 'rgba(148,163,184,0.1)' } }, x: { grid: { display: false } } }
+                }
+            });
+
+            // 9. Servicios por Tipo de Equipo (Bar, interactivo) — pestaña Mantenimiento
+            charts.servtipo = new Chart(document.getElementById('chart-mant-servtipo').getContext('2d'), {
+                type: 'bar',
+                data: { labels: [], datasets: [] },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true, grid: { color: 'rgba(148,163,184,0.1)' } }, x: { grid: { display: false } } },
+                    onClick: (ev, els) => { if(els && els.length && _servTipoLabels[els[0].index]) toggleMantTipoFilter(_servTipoLabels[els[0].index]); }
+                }
+            });
+
+            // 10. Cumplimiento (Doughnut) — pestaña Mantenimiento
+            charts.mantCumpl = new Chart(document.getElementById('chart-mant-cumplimiento').getContext('2d'), {
+                type: 'doughnut',
+                data: { labels: ['Vigentes','Vencen este mes','Vencidos ≤30d','Vencidos >30d'], datasets: [{ data:[0,0,0,0], backgroundColor:['#10b981','#f59e0b','#f97316','#f43f5e'], borderWidth:2, borderColor:'#ffffff' }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position:'bottom', labels:{ boxWidth:10, padding:8, font:{size:10} } } }, cutout: '58%' }
+            });
+
+            // 11. Días No Operativo por Equipo (Bar horizontal, interactivo)
+            charts.noop = new Chart(document.getElementById('chart-noop').getContext('2d'), {
+                type: 'bar',
+                data: { labels: [], datasets: [] },
+                options: {
+                    indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false }, tooltip: { callbacks: { afterLabel: (ctx)=>{ const n = ctx.dataset._eq && ctx.dataset._eq[ctx.dataIndex]; return n ? (n+' equipo(s)') : ''; } } } },
+                    scales: { x: { beginAtZero: true, grid: { color: 'rgba(148,163,184,0.1)' } }, y: { grid: { display: false } } },
+                    onClick: (ev, els) => { if(els && els.length && _noopEmpresas[els[0].index]) toggleMantEmpresaFilter(_noopEmpresas[els[0].index]); }
+                }
+            });
         }
 
         // --- ACTUALIZACIÓN DINÁMICA DE GRÁFICOS (CHART.JS) ---
@@ -2807,17 +3610,8 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
             }];
             charts.tipos.update('active'); // Método 'active' actualiza sin animaciones bruscas ni parpadeos
 
-            // 2. Gráfico Marcas
-            const marcaCounts = getCounts(filteredData, 'MARCA');
-            const sortedMarcas = Object.entries(marcaCounts).sort((a,b) => b[1] - a[1]).slice(0, 7);
-            charts.marcas.data.labels = sortedMarcas.map(x => x[0]);
-            charts.marcas.data.datasets = [{
-                label: 'Equipos',
-                data: sortedMarcas.map(x => x[1]),
-                backgroundColor: sortedMarcas.map(x => x[0] === dashboardFilters.marca ? '#7c3aed' : 'rgba(139, 92, 246, 0.8)'),
-                borderRadius: 8
-            }];
-            charts.marcas.update('active');
+            // 2. Estado de Cumplimiento de Mantenimiento
+            updateCumplimientoChart();
 
             // 3. Gráfico Ubicaciones
             const ubiCounts = getCounts(filteredData, 'UBICACION');
@@ -2830,22 +3624,6 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
                 borderColor: document.documentElement.classList.contains('dark') ? '#020617' : '#ffffff'
             }];
             charts.ubicaciones.update('active');
-
-            // 4. Gráfico Periodicidad
-            const periodCounts = getCounts(filteredData, 'PERIODICIDAD');
-            const sortedPeriod = Object.entries(periodCounts).sort((a,b) => b[1] - a[1]);
-            charts.periodicidad.data.labels = sortedPeriod.map(x => x[0]);
-            charts.periodicidad.data.datasets = [{
-                label: 'Equipos',
-                data: sortedPeriod.map(x => x[1]),
-                backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                borderColor: '#10b981',
-                borderWidth: 3,
-                tension: 0.3,
-                fill: true,
-                pointBackgroundColor: '#10b981'
-            }];
-            charts.periodicidad.update('active');
 
             // 5. Gráfico de Servicios por Empresa
             const servEmpCounts = getCounts(filteredServices, 'EMPRESA');
@@ -2983,18 +3761,18 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
                 }
 
                 tr.innerHTML = `
-                    <td class="px-6 py-4 font-mono font-semibold text-slate-500">${item.ID_EQUIPO}</td>
-                    <td class="px-6 py-4 font-semibold text-slate-900 dark:text-white">${item.NOMBRE_EQUIPO}</td>
-                    <td class="px-6 py-4">
+                    <td data-label="ID" class="px-6 py-4 font-mono font-semibold text-slate-500">${item.ID_EQUIPO}</td>
+                    <td data-label="Nombre de Equipo" class="px-6 py-4 font-semibold text-slate-900 dark:text-white">${item.NOMBRE_EQUIPO}</td>
+                    <td data-label="Categoría / Tipo" class="px-6 py-4">
                         <span class="px-2 py-1 text-xs font-semibold rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">${item.TIPO_EQUIPO}</span>
                     </td>
-                    <td class="px-6 py-4 text-slate-500 dark:text-slate-400 font-medium">${item.UBICACION}</td>
-                    <td class="px-6 py-4">
+                    <td data-label="Ubicación" class="px-6 py-4 text-slate-500 dark:text-slate-400 font-medium">${item.UBICACION}</td>
+                    <td data-label="Marca y Modelo" class="px-6 py-4">
                         <div class="font-medium text-slate-900 dark:text-white">${item.MARCA}</div>
                         <div class="text-xs text-slate-400">${item.MODELO || '-'}</div>
                     </td>
-                    <td class="px-6 py-4 font-mono text-xs text-slate-500">${item.SERIE || '-'}</td>
-                    <td class="px-6 py-4">
+                    <td data-label="Nº Serie" class="px-6 py-4 font-mono text-xs text-slate-500">${item.SERIE || '-'}</td>
+                    <td data-label="Periodicidad" class="px-6 py-4">
                         <span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold ${badgeClass}">
                             ${item.PERIODICIDAD}
                         </span>
