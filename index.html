@@ -133,9 +133,7 @@
             <!-- Header Sidebar -->
             <div class="p-6 border-b border-slate-800 flex items-center justify-between">
                 <div class="flex items-center space-x-3">
-                    <div class="bg-primary-600 p-2 rounded-lg text-white">
-                        <i data-lucide="wrench" class="w-6 h-6"></i>
-                    </div>
+                    <img src="logo.png" alt="Deepdatix" class="h-10 w-auto rounded-lg object-contain dark:brightness-110">
                     <div>
                         <h1 class="font-bold text-lg leading-none">SERVICIO</h1>
                         <span class="text-xs text-slate-400">Control de Equipos</span>
@@ -191,9 +189,12 @@
             <!-- ENCABEZADO EXCLUSIVO PARA IMPRESIÓN / EXPORTACIÓN PDF -->
             <div class="hidden print-header p-6 border-b-2 border-slate-300 bg-white text-slate-900">
                 <div class="flex justify-between items-center">
-                    <div>
-                        <h1 class="text-2xl font-bold uppercase tracking-wide">Informe Ejecutivo de Servicio Técnico</h1>
-                        <p class="text-sm text-slate-600">Sistema de Control y Gestión de Equipos - Servicio Técnico</p>
+                    <div class="flex items-center space-x-4">
+                        <img src="logo.png" alt="Deepdatix" class="h-12 w-auto object-contain">
+                        <div>
+                            <h1 class="text-2xl font-bold uppercase tracking-wide">Informe Ejecutivo de Servicio Técnico</h1>
+                            <p class="text-sm text-slate-600">Sistema de Control y Gestión de Equipos - Servicio Técnico</p>
+                        </div>
                     </div>
                     <div class="text-right text-xs text-slate-500">
                         <p>Fecha de Generación: <span id="print-date"></span></p>
@@ -216,6 +217,8 @@
                 </div>
 
                 <div class="flex items-center space-x-2 sm:space-x-4 flex-shrink-0">
+                    <!-- Deepdatix Logo -->
+                    <img src="logo.png" alt="Deepdatix" class="h-8 w-auto object-contain hidden xs:block dark:brightness-110">
                     <!-- Botón de Sincronizar Ahora -->
                     <button onclick="fetchSheetData()" title="Sincronizar ahora" class="flex items-center space-x-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 px-3 sm:px-4 py-2 rounded-lg font-medium text-sm transition-all">
                         <i data-lucide="refresh-cw" class="w-4 h-4" id="sync-icon"></i>
@@ -561,6 +564,13 @@
                         </div>
 
                         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <!-- Filtro Empresa -->
+                            <div>
+                                <select id="filter-empresa" onchange="filterData()" class="w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                                    <option value="" class="bg-white dark:bg-slate-900">Todas las Empresas</option>
+                                </select>
+                            </div>
+
                             <!-- Filtro Ubicacion -->
                             <div>
                                 <select id="filter-ubicacion" onchange="filterData()" class="w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
@@ -575,7 +585,7 @@
                                 </select>
                             </div>
 
-                            <div class="col-span-1 md:col-span-2 flex justify-end items-center">
+                            <div class="flex justify-end items-center">
                                 <button onclick="resetFilters()" class="text-sm font-semibold text-slate-500 hover:text-slate-900 dark:hover:text-white transition-all flex items-center space-x-1">
                                     <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
                                     <span>Limpiar filtros</span>
@@ -1643,6 +1653,7 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
         // currentServices => Bitácora de servicios (pestaña SERVICIO de Google Sheets)
         let currentData = [...MOCK_DATA];
         let filteredData = [...MOCK_DATA];
+        let equiposFilteredData = [...MOCK_DATA];
         let currentServices = [...MOCK_SERVICES];
         let filteredServices = [...MOCK_SERVICES];
         let currentTab = 'resumen';
@@ -1771,7 +1782,8 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
                 if (!csvText) return;
                 const parsed = Papa.parse(csvText, { header: true, skipEmptyLines: true });
                 if (parsed.data && parsed.data.length > 0) {
-                    currentData = normalizeEquipos(parsed.data);
+                    processEquiposData(parsed.data);
+                    processServicesData(MOCK_SERVICES);
                     populateSecondaryFilters();
                     populateDashboardFilters();
                 }
@@ -2119,8 +2131,62 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
                     MODELO: getVal(['modelo']) || '',
                     SERIE: getVal(['serie', 'n serie', 'n_serie']) || 'S/S',
                     UBICACION: getVal(['ubicacion', 'ubicación', 'sector', 'local']) || 'ÁREA GENERAL',
-                    PERIODICIDAD: getVal(['periodicidad', 'periodicidad contratada', 'mantenimiento', 'estado']) || 'VIGENTE'
+                    PERIODICIDAD: getVal(['periodicidad', 'periodicidad contratada', 'mantenimiento', 'estado']) || 'VIGENTE',
+                    ID_EMPRESA: getVal(['id empresa', 'id_empresa', 'empresa', 'id_cliente', 'id cliente']) || '1001'
                 };
+            });
+        }
+
+        function resolveEquiposCompanies() {
+            // Build a map of ID_EQUIPO -> Set of EMPRESA names from services
+            const eqToEmp = {};
+            currentServices.forEach(s => {
+                const id = String(s.ID_EQUIPO || '').trim();
+                const emp = String(s.EMPRESA || '').trim();
+                if (id && emp && emp !== 'SIN EMPRESA') {
+                    if (!eqToEmp[id]) eqToEmp[id] = new Set();
+                    eqToEmp[id].add(emp);
+                }
+            });
+
+            // Build a map of ID_EMPRESA -> Set of EMPRESA names
+            const empIdToNames = {};
+            currentData.forEach(e => {
+                const idEq = String(e.ID_EQUIPO || '').trim();
+                const idEmp = String(e.ID_EMPRESA || '').trim();
+                const names = eqToEmp[idEq];
+                if (idEmp && names) {
+                    if (!empIdToNames[idEmp]) empIdToNames[idEmp] = new Set();
+                    names.forEach(n => empIdToNames[idEmp].add(n));
+                }
+            });
+
+            // Pre-defined mapping for fallback/baseline data if they aren't mapped in services yet
+            const defaultIdEmpMap = {
+                '1001': 'USM VALPO',
+                '1002': 'USM VIÑA CASINO',
+                '1003': 'ARTEMASA'
+            };
+
+            // Now, assign the EMPRESA name to each equipment
+            currentData.forEach(e => {
+                const idEq = String(e.ID_EQUIPO || '').trim();
+                const idEmp = String(e.ID_EMPRESA || '').trim();
+
+                // 1. Try to get company from services of this specific equipment
+                const directNames = eqToEmp[idEq];
+                if (directNames && directNames.size > 0) {
+                    e.EMPRESA = Array.from(directNames)[0]; // Use the first matching name
+                } else {
+                    // 2. Try to get company name from ID_EMPRESA mapping
+                    const mappedNames = empIdToNames[idEmp];
+                    if (mappedNames && mappedNames.size > 0) {
+                        e.EMPRESA = Array.from(mappedNames)[0];
+                    } else {
+                        // 3. Fallback to predefined mapping
+                        e.EMPRESA = defaultIdEmpMap[idEmp] || `Empresa ${idEmp}`;
+                    }
+                }
             });
         }
 
@@ -2131,6 +2197,7 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
             const newHash = JSON.stringify(normalizedData);
             if (oldHash === newHash && currentData.length > 0) return false;
             currentData = normalizedData;
+            resolveEquiposCompanies();
             return true;
         }
 
@@ -2150,15 +2217,18 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
                 const idServicio = getVal(['id servicio', 'id_servicio', 'idservicio', 'id']);
                 const tipoEquipo = getVal(['tipo equipo', 'tipo_equipo', 'tipo', 'categoria', 'categoría']) || 'OTROS';
 
-                // Resolver nombre del equipo cruzando con el inventario
-                let nombreEquipo;
-                const eqInfo = equiposPorId[idEquipo];
-                if (eqInfo) {
-                    nombreEquipo = eqInfo.NOMBRE_EQUIPO;
-                } else if (idEquipo) {
-                    nombreEquipo = `${tipoEquipo} (ID ${idEquipo})`;
-                } else {
-                    nombreEquipo = tipoEquipo;
+                // Resolver nombre del equipo cruzando con el inventario, priorizando la columna de equipo directa del sheet
+                const rawEquipo = getVal(['equipo', 'equipo intervenido', 'equipo_intervenido', 'nombre equipo', 'nombre_equipo']);
+                let nombreEquipo = rawEquipo ? String(rawEquipo).trim() : '';
+                if (!nombreEquipo) {
+                    const eqInfo = idEquipo ? equiposPorId[String(idEquipo).trim()] : null;
+                    if (eqInfo) {
+                        nombreEquipo = eqInfo.NOMBRE_EQUIPO;
+                    } else if (idEquipo) {
+                        nombreEquipo = `${tipoEquipo} (ID ${idEquipo})`;
+                    } else {
+                        nombreEquipo = tipoEquipo;
+                    }
                 }
 
                 // Observaciones: SOLO "informar observaciones generales" (no incluye TAREAS)
@@ -2328,6 +2398,7 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
             const newHash = JSON.stringify(normalized);
             if (oldHash === newHash && currentServices.length > 0) return false;
             currentServices = normalized;
+            resolveEquiposCompanies();
             return true;
         }
 
@@ -2351,6 +2422,22 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
                 });
                 if (nombres.includes(currVal)) sel.value = currVal;
             }
+
+            // Dinamización de estados operativos
+            const estados = [...new Set(currentServices.map(s => (s.ESTADO || '').trim()).filter(Boolean))].sort();
+            const estadoSel = document.getElementById('dash-filter-estado');
+            if (estadoSel) {
+                const currVal = dashboardFilters.estado;
+                estadoSel.innerHTML = `<option value="" class="bg-white dark:bg-slate-900">Todos los Estados</option>`;
+                estados.forEach(val => {
+                    const opt = document.createElement('option');
+                    opt.value = val;
+                    opt.innerText = val;
+                    opt.className = "bg-white dark:bg-slate-900";
+                    estadoSel.appendChild(opt);
+                });
+                if (estados.includes(currVal)) estadoSel.value = currVal;
+            }
         }
 
         // --- MULTISELECCIÓN (Empresa / Tipo de Equipo) ---
@@ -2367,15 +2454,33 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
             const selected = dashboardFilters[prop] || [];
             panel.innerHTML = '';
 
-            // Cabecera fija con acciones rápidas
+            // Cabecera fija con acciones rápidas y buscador
             const header = document.createElement('div');
-            header.className = "sticky top-0 bg-white dark:bg-slate-900 flex items-center justify-between gap-2 px-2 py-1.5 mb-1 border-b border-slate-100 dark:border-slate-800";
+            header.className = "sticky top-0 bg-white dark:bg-slate-900 px-2 py-1.5 border-b border-slate-100 dark:border-slate-800 z-10 space-y-1.5";
             header.innerHTML = `
-                <button type="button" class="text-xs font-bold text-primary-600 hover:text-primary-700">Seleccionar todas</button>
-                <button type="button" class="text-xs font-semibold text-slate-400 hover:text-rose-500">Limpiar</button>`;
+                <div class="flex items-center justify-between gap-2">
+                    <button type="button" class="text-xs font-bold text-primary-600 hover:text-primary-700">Seleccionar todas</button>
+                    <button type="button" class="text-xs font-semibold text-slate-400 hover:text-rose-500">Limpiar</button>
+                </div>
+                <div>
+                    <input type="text" placeholder="Buscar..." class="w-full px-2 py-1 text-xs border border-slate-200 dark:border-slate-700 bg-transparent rounded focus:outline-none focus:ring-1 focus:ring-primary-500 text-slate-800 dark:text-slate-100">
+                </div>`;
             const [btnAll, btnClear] = header.querySelectorAll('button');
+            const searchInput = header.querySelector('input');
             btnAll.addEventListener('click', () => selectAllMultiselect(key));
             btnClear.addEventListener('click', () => clearMultiselect(key));
+            searchInput.addEventListener('input', (e) => {
+                const query = e.target.value.toLowerCase().trim();
+                const labels = panel.querySelectorAll('label');
+                labels.forEach(lbl => {
+                    const text = lbl.querySelector('span').innerText.toLowerCase();
+                    if (query === "" || text.includes(query)) {
+                        lbl.style.display = 'flex';
+                    } else {
+                        lbl.style.display = 'none';
+                    }
+                });
+            });
             panel.appendChild(header);
 
             if (values.length === 0) {
@@ -2426,7 +2531,7 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
 
         // Cerrar paneles al hacer clic fuera
         document.addEventListener('click', (e) => {
-            if (!e.target.closest('[onclick^="toggleMultiselect"]') && !e.target.closest('.multiselect-panel')) {
+            if (!e.target.closest('[onclick^="toggleMultiselect"]') && !e.target.closest('[onclick^="mantToggleMs"]') && !e.target.closest('.multiselect-panel')) {
                 document.querySelectorAll('.multiselect-panel').forEach(p => p.classList.add('hidden'));
             }
         });
@@ -2481,6 +2586,17 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
             const empresaSel = dashboardFilters.empresa;   // array
             const tipoSel = dashboardFilters.tipoEquipo;    // array
 
+            // Mapear el último estado por equipo basándose en la fecha del servicio
+            const lastServiceByEquipment = {};
+            currentServices.forEach(s => {
+                if (!s.FECHA || !s.ID_EQUIPO) return;
+                const eqId = String(s.ID_EQUIPO).trim();
+                const d = parseServiceDate(s.FECHA);
+                if (!lastServiceByEquipment[eqId] || d > lastServiceByEquipment[eqId].d) {
+                    lastServiceByEquipment[eqId] = { d, status: (s.ESTADO || '').trim().toUpperCase() };
+                }
+            });
+
             filteredData = currentData.filter(item => {
                 const matchTipo = tipoSel.length === 0 || tipoSel.includes(item.TIPO_EQUIPO);
                 const matchNombre = !dashboardFilters.equipoNombre || item.NOMBRE_EQUIPO === dashboardFilters.equipoNombre;
@@ -2495,7 +2611,16 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
                     matchEmpresa = equiposDeEmpresa.includes(item.NOMBRE_EQUIPO.trim().toUpperCase());
                 }
 
-                return matchTipo && matchNombre && matchMarca && matchUbi && matchEmpresa;
+                // Filtrar por estado actual
+                let matchEstado = true;
+                if (dashboardFilters.estado) {
+                    const eqId = String(item.ID_EQUIPO).trim();
+                    const lastServ = lastServiceByEquipment[eqId];
+                    const lastStatus = lastServ ? lastServ.status : '';
+                    matchEstado = lastStatus === dashboardFilters.estado.toUpperCase();
+                }
+
+                return matchTipo && matchNombre && matchMarca && matchUbi && matchEmpresa && matchEstado;
             });
 
             filteredServices = currentServices.filter(service => {
@@ -2505,10 +2630,11 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
                 const matchEmpresa = empresaSel.length === 0 || empresaSel.includes(service.EMPRESA);
                 const matchTipo = tipoSel.length === 0 || tipoSel.includes(service.TIPO_EQUIPO);
 
-                // Filtro por estado operativo
+                // Filtro por estado operativo dinámico
                 let matchEstado = true;
-                if (dashboardFilters.estado === 'operativo') matchEstado = service.OPERATIVO !== false;
-                else if (dashboardFilters.estado === 'no-operativo') matchEstado = service.OPERATIVO === false;
+                if (dashboardFilters.estado) {
+                    matchEstado = (service.ESTADO || '').trim().toUpperCase() === dashboardFilters.estado.toUpperCase();
+                }
 
                 let matchMarca = true;
                 if (dashboardFilters.marca) {
@@ -2998,16 +3124,35 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
         }
 
         // Estado de cumplimiento (vigentes / vencen este mes / vencidos). Devuelve conteos + listas por categoría.
-        function computeCumplimiento(useMantFilters){
+        function computeCumplimiento(filterMode){
             const hoy = new Date(); hoy.setHours(0,0,0,0);
             const finMes = new Date(hoy.getFullYear(), hoy.getMonth()+1, 0); finMes.setHours(23,59,59,999);
             const hace30 = new Date(hoy.getTime() - 30*86400000);
-            const equiposPorId = {}; currentData.forEach(e=>{ const id=String(e.ID_EQUIPO).trim(); if(id) equiposPorId[id]=e; });
+
+            // Traducir los antiguos valores booleanos
+            let mode = filterMode;
+            if (mode === true) mode = 'mantenimiento';
+            if (mode === false) mode = null;
+
+            // Determinar los conjuntos de datos apropiados
+            let targetServices = currentServices;
+            let targetData = currentData;
+            if (mode === 'resumen') {
+                targetServices = filteredServices;
+                targetData = filteredData;
+            }
+
+            const equiposPorId = {};
+            targetData.forEach(e => {
+                const id = String(e.ID_EQUIPO).trim();
+                if (id) equiposPorId[id] = e;
+            });
+
             const empSel = mantFilters.empresa||[], tipoSel = mantFilters.tipoEquipo||[];
             const lastPrev = {};
-            currentServices.forEach(s=>{
+            targetServices.forEach(s => {
                 if(!s.FECHA || !esPreventiva(s)) return;
-                if(useMantFilters){
+                if (mode === 'mantenimiento') {
                     if(empSel.length && !empSel.includes(s.EMPRESA)) return;
                     if(tipoSel.length && !tipoSel.includes(s.TIPO_EQUIPO)) return;
                     if(mantFilters.equipo && (s.EQUIPO||'').trim()!==mantFilters.equipo) return;
@@ -3015,12 +3160,14 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
                 const k=equipoKey(s); const d=parseServiceDate(s.FECHA);
                 if(!lastPrev[k] || d>lastPrev[k].d) lastPrev[k]={ d, idEquipo:s.ID_EQUIPO, empresa:s.EMPRESA, equipo:s.EQUIPO };
             });
+
             const res = { vig:0, mes:0, v30:0, v30p:0, listas:{ vig:[], mes:[], v30:[], v30p:[] } };
-            Object.values(lastPrev).forEach(p=>{
+            Object.values(lastPrev).forEach(p => {
                 const e = equiposPorId[String(p.idEquipo).trim()];
+                if (mode === 'resumen' && !e) return; // Debe existir en filteredData en la Vista General
                 const meses = periodicidadMeses(e ? e.PERIODICIDAD : '');
                 if(!meses) return;
-                if(useMantFilters && mantFilters.ubicacion && (!e || e.UBICACION!==mantFilters.ubicacion)) return;
+                if(mode === 'mantenimiento' && mantFilters.ubicacion && (!e || e.UBICACION!==mantFilters.ubicacion)) return;
                 const next = addMonths(p.d, meses);
                 const item = { equipo:p.equipo, empresa:p.empresa, ubicacion: e?e.UBICACION:'-', ultima:p.d, prox:next };
                 let cat;
@@ -3032,7 +3179,7 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
         let _cumplData = null;
         function updateCumplimientoChart(){
             if(!charts.cumplimiento) return;
-            const c = computeCumplimiento(false);
+            const c = computeCumplimiento('resumen');
             _cumplData = c;
             charts.cumplimiento.data.datasets[0].data = [c.vig, c.mes, c.v30, c.v30p];
             charts.cumplimiento.update('active');
@@ -3041,7 +3188,7 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
         }
         // Drilldown del Home: muestra el detalle de la categoría de cumplimiento elegida
         function showCumplimientoDetalle(cat){
-            if(!_cumplData) _cumplData = computeCumplimiento(false);
+            if(!_cumplData) _cumplData = computeCumplimiento('resumen');
             const titulos = { vig:'Vigentes', mes:'Vencen este mes', v30:'Vencidos ≤ 30 días', v30p:'Vencidos > 30 días' };
             const lista = (_cumplData.listas[cat]||[]).slice().sort((a,b)=> a.prox - b.prox);
             const cont = document.getElementById('cumpl-detalle-lista');
@@ -3067,14 +3214,36 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
             const prop = MANT_MS_PROP[key];
             const selected = mantFilters[prop] || [];
             panel.innerHTML = '';
+
+            // Cabecera fija con acciones rápidas y buscador
             const header = document.createElement('div');
-            header.className = "sticky top-0 bg-white dark:bg-slate-900 flex items-center justify-between gap-2 px-2 py-1.5 mb-1 border-b border-slate-100 dark:border-slate-800";
-            header.innerHTML = `<button type="button" class="text-xs font-bold text-primary-600 hover:text-primary-700">Seleccionar todas</button>
-                <button type="button" class="text-xs font-semibold text-slate-400 hover:text-rose-500">Limpiar</button>`;
+            header.className = "sticky top-0 bg-white dark:bg-slate-900 px-2 py-1.5 border-b border-slate-100 dark:border-slate-800 z-10 space-y-1.5";
+            header.innerHTML = `
+                <div class="flex items-center justify-between gap-2">
+                    <button type="button" class="text-xs font-bold text-primary-600 hover:text-primary-700">Seleccionar todas</button>
+                    <button type="button" class="text-xs font-semibold text-slate-400 hover:text-rose-500">Limpiar</button>
+                </div>
+                <div>
+                    <input type="text" placeholder="Buscar..." class="w-full px-2 py-1 text-xs border border-slate-200 dark:border-slate-700 bg-transparent rounded focus:outline-none focus:ring-1 focus:ring-primary-500 text-slate-800 dark:text-slate-100">
+                </div>`;
             const [bAll, bClear] = header.querySelectorAll('button');
+            const searchInput = header.querySelector('input');
             bAll.addEventListener('click', () => { mantFilters[prop] = (MANT_MS_VALUES[key]||[]).slice(); mantApply(); });
             bClear.addEventListener('click', () => { mantFilters[prop] = []; mantApply(); });
+            searchInput.addEventListener('input', (e) => {
+                const query = e.target.value.toLowerCase().trim();
+                const labels = panel.querySelectorAll('label');
+                labels.forEach(lbl => {
+                    const text = lbl.querySelector('span').innerText.toLowerCase();
+                    if (query === "" || text.includes(query)) {
+                        lbl.style.display = 'flex';
+                    } else {
+                        lbl.style.display = 'none';
+                    }
+                });
+            });
             panel.appendChild(header);
+
             values.forEach(val => {
                 const label = document.createElement('label');
                 label.className = "flex items-center space-x-2 px-2 py-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer text-sm text-slate-700 dark:text-slate-200";
@@ -3666,7 +3835,7 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
                 const select = document.getElementById(elementId);
                 if (!select) return;
                 const currentValue = select.value;
-                const uniqueValues = [...new Set(currentData.map(item => item[propertyName].trim()))].filter(Boolean).sort();
+                const uniqueValues = [...new Set(currentData.map(item => (item[propertyName] || '').trim()))].filter(Boolean).sort();
                 
                 select.innerHTML = `<option value="">${label}</option>`;
                 uniqueValues.forEach(val => {
@@ -3682,6 +3851,7 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
                 }
             };
 
+            populate('filter-empresa', 'EMPRESA', 'Todas las Empresas');
             populate('filter-tipo', 'TIPO_EQUIPO', 'Todos los Tipos');
             populate('filter-marca', 'MARCA', 'Todas las Marcas');
             populate('filter-ubicacion', 'UBICACION', 'Todas las Ubicaciones');
@@ -3694,8 +3864,10 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
             const marcaFilter = document.getElementById('filter-marca').value;
             const ubicacionFilter = document.getElementById('filter-ubicacion').value;
             const periodicidadFilter = document.getElementById('filter-periodicidad').value;
+            const empresaSelect = document.getElementById('filter-empresa');
+            const empresaFilter = empresaSelect ? empresaSelect.value : "";
 
-            filteredData = currentData.filter(item => {
+            equiposFilteredData = currentData.filter(item => {
                 const matchSearch = searchQuery === "" || 
                     item.ID_EQUIPO.toString().toLowerCase().includes(searchQuery) ||
                     item.NOMBRE_EQUIPO.toLowerCase().includes(searchQuery) ||
@@ -3706,8 +3878,9 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
                 const matchMarca = marcaFilter === "" || item.MARCA === marcaFilter;
                 const matchUbicacion = ubicacionFilter === "" || item.UBICACION === ubicacionFilter;
                 const matchPeriodicidad = periodicidadFilter === "" || item.PERIODICIDAD === periodicidadFilter;
+                const matchEmpresa = empresaFilter === "" || (item.EMPRESA || "") === empresaFilter;
 
-                return matchSearch && matchTipo && matchMarca && matchUbicacion && matchPeriodicidad;
+                return matchSearch && matchTipo && matchMarca && matchUbicacion && matchPeriodicidad && matchEmpresa;
             });
 
             currentPageNum = 1;
@@ -3720,7 +3893,7 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
             if (!tableBody) return;
             tableBody.innerHTML = '';
 
-            const totalCount = filteredData.length;
+            const totalCount = equiposFilteredData.length;
             document.getElementById('table-total-count').innerText = currentData.length;
 
             if (totalCount === 0) {
@@ -3736,9 +3909,9 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
 
             const startIndex = (currentPageNum - 1) * itemsPerPage;
             const endIndex = Math.min(startIndex + itemsPerPage, totalCount);
-            const paginatedItems = filteredData.slice(startIndex, endIndex);
+            const paginatedItems = equiposFilteredData.slice(startIndex, endIndex);
 
-            document.getElementById('table-showing-count').innerText = filteredData.length;
+            document.getElementById('table-showing-count').innerText = equiposFilteredData.length;
             document.getElementById('current-page').innerText = currentPageNum;
 
             document.getElementById('btn-prev-page').disabled = (currentPageNum === 1);
@@ -3784,6 +3957,7 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
 
         function resetFilters() {
             document.getElementById('search-input').value = "";
+            document.getElementById('filter-empresa').value = "";
             document.getElementById('filter-tipo').value = "";
             document.getElementById('filter-marca').value = "";
             document.getElementById('filter-ubicacion').value = "";
@@ -3800,7 +3974,7 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
         }
 
         function nextPage() {
-            if ((currentPageNum * itemsPerPage) < filteredData.length) {
+            if ((currentPageNum * itemsPerPage) < equiposFilteredData.length) {
                 currentPageNum++;
                 renderTable();
             }
