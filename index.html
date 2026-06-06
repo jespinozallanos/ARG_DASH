@@ -89,6 +89,7 @@
 
         /* ===== RESPONSIVE MÓVIL: tablas como tarjetas apiladas ===== */
         @media (max-width: 768px) {
+            .responsive-table colgroup { display: none !important; }
             .responsive-table { display: block; }
             .responsive-table thead { display: none; }
             .responsive-table tbody { display: block; }
@@ -125,22 +126,25 @@
 <body class="h-full text-slate-800 dark:text-slate-100 transition-colors duration-200">
     <div class="min-h-full flex flex-col md:flex-row">
         
+        <!-- Zona de activación invisible en el borde izquierdo para desplegar sidebar al acercar mouse -->
+        <div id="sidebar-trigger" onmouseenter="handleSidebarMouseEnter()" class="fixed inset-y-0 left-0 w-3 z-45 no-print"></div>
+
         <!-- BACKDROP de la barra lateral (al abrirla en modo overlay) -->
-        <div id="sidebar-backdrop" onclick="closeSidebar()" class="hidden fixed inset-0 bg-black/50 z-40 no-print"></div>
+        <div id="sidebar-backdrop" onclick="closeSidebar(true)" class="hidden fixed inset-0 bg-black/50 z-40 no-print"></div>
 
         <!-- SIDEBAR DE NAVEGACIÓN (overlay, se oculta automáticamente) -->
-        <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 text-slate-100 flex flex-col border-r border-slate-800 no-print transform -translate-x-full transition-transform duration-300">
+        <aside id="sidebar" onmouseenter="handleSidebarMouseEnter()" onmouseleave="closeSidebar(false)" class="fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 text-slate-100 flex flex-col border-r border-slate-800 no-print transform -translate-x-full transition-transform duration-300">
             <!-- Header Sidebar -->
-            <div class="p-6 border-b border-slate-800 flex items-center justify-between">
-                <div class="flex items-center space-x-3">
-                    <img src="logo.png" alt="Deepdatix" class="h-10 w-auto rounded-lg object-contain dark:brightness-110">
-                    <div>
-                        <h1 class="font-bold text-lg leading-none">SERVICIO</h1>
-                        <span class="text-xs text-slate-400">Control de Equipos</span>
+            <div class="p-4 border-b border-slate-800 flex items-center justify-between gap-2">
+                <div class="flex items-center space-x-2 min-w-0 flex-1">
+                    <img src="logo.png" alt="Deepdatix" class="h-8 max-w-[100px] object-contain rounded-lg flex-shrink-0 dark:brightness-110">
+                    <div class="min-w-0 flex-1">
+                        <h1 class="font-bold text-sm leading-none truncate text-white">SERVICIO</h1>
+                        <span class="text-[10px] text-slate-400 block truncate">Control de Equipos</span>
                     </div>
                 </div>
-                <button onclick="closeSidebar()" title="Cerrar menú" class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-all">
-                    <i data-lucide="x" class="w-5 h-5"></i>
+                <button onclick="closeSidebar(true)" title="Cerrar menú" class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-all flex-shrink-0">
+                    <i data-lucide="x" class="w-4 h-4"></i>
                 </button>
             </div>
             
@@ -218,7 +222,7 @@
 
                 <div class="flex items-center space-x-2 sm:space-x-4 flex-shrink-0">
                     <!-- Deepdatix Logo -->
-                    <img src="logo.png" alt="Deepdatix" class="h-8 w-auto object-contain hidden xs:block dark:brightness-110">
+                    <img src="logo.png" alt="Deepdatix" class="h-8 w-auto object-contain hidden sm:block dark:brightness-110">
                     <!-- Botón de Sincronizar Ahora -->
                     <button onclick="fetchSheetData()" title="Sincronizar ahora" class="flex items-center space-x-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 px-3 sm:px-4 py-2 rounded-lg font-medium text-sm transition-all">
                         <i data-lucide="refresh-cw" class="w-4 h-4" id="sync-icon"></i>
@@ -243,7 +247,7 @@
             </div>
 
             <!-- CONTENEDOR MULTIPÁGINA (TABS) -->
-            <div id="main-scroll" class="flex-1 overflow-y-auto p-3 sm:p-6 space-y-4 sm:space-y-6">
+            <div id="main-scroll" class="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-6 space-y-4 sm:space-y-6">
 
                 <!-- 1. TAB Vista General (RESUMEN) -->
                 <div id="tab-resumen" class="space-y-6">
@@ -408,7 +412,7 @@
                                     <p class="text-xs text-slate-400">Según última preventiva y periodicidad de cada equipo</p>
                                 </div>
                             </div>
-                            <div class="grid grid-cols-2 gap-4 items-center">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
                                 <div class="relative h-56">
                                     <canvas id="chart-cumplimiento"></canvas>
                                 </div>
@@ -1531,6 +1535,7 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
                 EMPRESA: "USM VALPO",
                 EQUIPO: "CÁMARA DE MANTENCIÓN C.C.8.1",
                 TIPO_EQUIPO: "EQUIPOS DE FRIO",
+                ESTADO: "mantenimientos",
                 OBSERVACIONES: "Se reemplazan válvula solenoide, filtro deshidratador y válvula de expansión termostática. Se realiza vacío, carga con R507 y pruebas de marcha. Parámetros conformes.",
                 PDF_LINK: "https://drive.google.com/open?id=1_kokkKNqSicOx-5Q-wdC1FY4qeT1p9Oz"
             },
@@ -1539,6 +1544,7 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
                 EMPRESA: "USM VALPO",
                 EQUIPO: "MARMITA C.C.1.1 (ex C.C.1.4)",
                 TIPO_EQUIPO: "MARMITA",
+                ESTADO: "correctiva",
                 OBSERVACIONES: "Se reemplaza regulador de gas defectuoso por uno nuevo, ajustando la presión a 18 mbar. Prueba de hermeticidad realizada conforme, sin escapes.",
                 PDF_LINK: "https://drive.google.com/open?id=1P_h5z7r0QpUmULoIKyhrcydUHEpg2nZP"
             },
@@ -1547,6 +1553,7 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
                 EMPRESA: "USM VALPO",
                 EQUIPO: "MARMITA C.C.1.1 (ex C.C.1.4)",
                 TIPO_EQUIPO: "MARMITA",
+                ESTADO: "inspeccion",
                 OBSERVACIONES: "Inspección por falla de encendido. Se detecta ausencia total de flujo de gas. Falla mecánica interna en el regulador de gas bloqueado y fuera de servicio técnico provisional.",
                 PDF_LINK: "https://drive.google.com/open?id=1Rja-aGLssPricG05viItDM5jG0JGtHYu"
             },
@@ -1555,6 +1562,7 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
                 EMPRESA: "USM VALPO",
                 EQUIPO: "SARTEN BASCULANTE C.C.4.1 (ex C.C.4.2)",
                 TIPO_EQUIPO: "SARTEN BASCULANTE",
+                ESTADO: "reparacion",
                 OBSERVACIONES: "Se detecta fusible de alimentación quemado. Se reemplaza fusible, verificando voltajes y realizando pruebas operacionales satisfactorias.",
                 PDF_LINK: "https://drive.google.com/open?id=1oi5fyj_6gNBjKJ8EjF7xqrgq8L-SPLD2"
             },
@@ -1563,6 +1571,7 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
                 EMPRESA: "USM VALPO",
                 EQUIPO: "CÁMARA DE MANTENCIÓN C.C.8.1",
                 TIPO_EQUIPO: "EQUIPOS DE FRIO",
+                ESTADO: "emergencia",
                 OBSERVACIONES: "Pérdida crítica de capacidad de frío. Válvula solenoide bloqueada y válvula de expansión trabada. Se sugiere apagado de seguridad, equipo queda fuera de servicio.",
                 PDF_LINK: "https://drive.google.com/open?id=1v2LacadkkXXRmDwWm0cEeRIMPiIf6Esx"
             },
@@ -1571,6 +1580,7 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
                 EMPRESA: "USM VIÑA CASINO",
                 EQUIPO: "MARMITA CC9.1",
                 TIPO_EQUIPO: "MARMITA",
+                ESTADO: "correctiva",
                 OBSERVACIONES: "Suministro e instalación de chispero de encendido nuevo por ruptura del componente antiguo. Verificación de piloto conforme.",
                 PDF_LINK: "https://drive.google.com/open?id=1QoRNfQtH36p1cQHGRlPF7okceqt55J2Z"
             },
@@ -1579,6 +1589,7 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
                 EMPRESA: "USM VALPO",
                 EQUIPO: "COCINA C.C.5.1",
                 TIPO_EQUIPO: "COCINA A GAS",
+                ESTADO: "reparacion",
                 OBSERVACIONES: "Se efectúa reemplazo de tramo de cañería de alimentación de ingreso debido a desgaste excesivo. Pruebas de fuga resultaron negativas.",
                 PDF_LINK: "https://drive.google.com/open?id=1quBTbOBT9d0qtb5Q20gRoyYVRyq9-x8r"
             },
@@ -1587,6 +1598,7 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
                 EMPRESA: "USM VALPO",
                 EQUIPO: "MARMITA C.C.1.2 (ex C.C.1.3)",
                 TIPO_EQUIPO: "MARMITA",
+                ESTADO: "preventiva",
                 OBSERVACIONES: "Limpieza preventiva de quemadores de gas y calibración de termocupla de seguridad. Se constata correcto corte automático de seguridad.",
                 PDF_LINK: "https://drive.google.com/open?id=1MAYTKDQlfuIa_5tmUaR-MREUJLDehRkn"
             },
@@ -1595,6 +1607,7 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
                 EMPRESA: "USM VALPO",
                 EQUIPO: "MARMITA C.C.1.1 (ex C.C.1.4)",
                 TIPO_EQUIPO: "MARMITA",
+                ESTADO: "preventiva",
                 OBSERVACIONES: "Limpieza de inyectores y desmonte preventivo de quemadores a gas. Verificación de hermeticidad de flexibles conforme.",
                 PDF_LINK: "https://drive.google.com/open?id=13MwGr4po_jGq8NybolUFe-se-zhhnwl0"
             },
@@ -1603,6 +1616,7 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
                 EMPRESA: "USM VALPO",
                 EQUIPO: "VISICOOLER DOS PUERTAS C.PR.8.1",
                 TIPO_EQUIPO: "EQUIPOS DE FRIO",
+                ESTADO: "correctiva",
                 OBSERVACIONES: "Se detecta bajo nivel de refrigerante, por lo que se recarga gas R134a. Funcionamiento restaurado a óptimo.",
                 PDF_LINK: "https://drive.google.com/open?id=1mLO_MT5DZxk6U9Q4a-MndKEGlK-6rXTe"
             },
@@ -1611,6 +1625,7 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
                 EMPRESA: "USM VALPO",
                 EQUIPO: "VISICOOLER C.C.8.6 LINEA UNO",
                 TIPO_EQUIPO: "EQUIPOS DE FRIO",
+                ESTADO: "preventiva",
                 OBSERVACIONES: "Limpieza a presión de condensador. Control operacional de termostato y luces. Consumo eléctrico nominal a 3.2 A.",
                 PDF_LINK: "https://drive.google.com/open?id=1LH0Uf1efFSd6x61TAxHNDWrfU21pOUcC"
             },
@@ -1619,6 +1634,7 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
                 EMPRESA: "USM VALPO",
                 EQUIPO: "BAÑO MARÍA C.C.7.1 LÍNEA 1",
                 TIPO_EQUIPO: "BAÑO MARIA",
+                ESTADO: "reparacion",
                 OBSERVACIONES: "Se realiza desmonte e instalación de resistencia eléctrica nueva. Mediciones de corriente estables a 9.6 A.",
                 PDF_LINK: "https://drive.google.com/open?id=1QzkS3kdAdzABZfEEEqv2v8eLy4S7U3Gq"
             },
@@ -1627,6 +1643,7 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
                 EMPRESA: "ARTEMASA",
                 EQUIPO: "CHILLER 1",
                 TIPO_EQUIPO: "EQUIPOS DE FRIO",
+                ESTADO: "preventiva",
                 OBSERVACIONES: "Mantenimiento preventivo. Limpieza profunda de intercambiador y serpentín. Control de protecciones eléctricas.",
                 PDF_LINK: "https://drive.google.com/open?id=1P5It5rDrhN95TH_EtYLbXcJblN7ZzftW"
             },
@@ -1635,6 +1652,7 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
                 EMPRESA: "ARTEMASA",
                 EQUIPO: "TUNEL 1",
                 TIPO_EQUIPO: "EQUIPOS DE FRIO",
+                ESTADO: "inspeccion",
                 OBSERVACIONES: "Inspección de túnel de congelados N°1. Se hace entrega de materiales de sellado para confección de piso.",
                 PDF_LINK: "https://drive.google.com/open?id=1NbQVeam-NnLZJoQOWB2k7NFk8Y39aYwS"
             },
@@ -1643,6 +1661,7 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
                 EMPRESA: "ARTEMASA",
                 EQUIPO: "CHILLER 1",
                 TIPO_EQUIPO: "EQUIPOS DE FRIO",
+                ESTADO: "otros",
                 OBSERVACIONES: "Limpieza química de serpentines. Reapriete general de cableado eléctrico en contactores y protecciones.",
                 PDF_LINK: "https://drive.google.com/open?id=1_iID3pdKPPKIy3OzifqCX_uyU_pj4vKZ"
             }
@@ -1755,22 +1774,44 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
         }
 
         // --- BARRA LATERAL (overlay que se oculta automáticamente) ---
+        let sidebarTimeout = null;
+
         function openSidebar() {
+            if (sidebarTimeout) { clearTimeout(sidebarTimeout); sidebarTimeout = null; }
             const sb = document.getElementById('sidebar');
             const bd = document.getElementById('sidebar-backdrop');
             if (sb) sb.classList.remove('-translate-x-full');
-            if (bd) bd.classList.remove('hidden');
+            // Solo activar backdrop en pantallas móviles/tablets
+            if (bd && window.innerWidth < 1024) bd.classList.remove('hidden');
         }
-        function closeSidebar() {
-            const sb = document.getElementById('sidebar');
-            const bd = document.getElementById('sidebar-backdrop');
-            if (sb) sb.classList.add('-translate-x-full');
-            if (bd) bd.classList.add('hidden');
+
+        function closeSidebar(immediate = false) {
+            if (sidebarTimeout) { clearTimeout(sidebarTimeout); sidebarTimeout = null; }
+            
+            const performClose = () => {
+                const sb = document.getElementById('sidebar');
+                const bd = document.getElementById('sidebar-backdrop');
+                if (sb) sb.classList.add('-translate-x-full');
+                if (bd) bd.classList.add('hidden');
+            };
+
+            if (immediate || window.innerWidth < 1024) {
+                performClose();
+            } else {
+                // Pequeño retraso para evitar cierres accidentales al sacar el mouse en escritorio
+                sidebarTimeout = setTimeout(performClose, 300);
+            }
         }
+
+        function handleSidebarMouseEnter() {
+            if (sidebarTimeout) { clearTimeout(sidebarTimeout); sidebarTimeout = null; }
+            openSidebar();
+        }
+
         function toggleSidebar() {
             const sb = document.getElementById('sidebar');
             if (sb && sb.classList.contains('-translate-x-full')) openSidebar();
-            else closeSidebar();
+            else closeSidebar(true);
         }
 
         // --- CARGA PREVIA: INVENTARIO BASE DESDE EL CSV EMBEBIDO ---
