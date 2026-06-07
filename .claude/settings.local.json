@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(py --version)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(node -e ' *)",
+      "Bash(node --check _check.js)",
+      "Bash(rm _check.js)",
+      "mcp__9cd9a874-b8cf-490c-96ba-afcb86ae1d01__search_files",
+      "mcp__9cd9a874-b8cf-490c-96ba-afcb86ae1d01__get_file_permissions",
+      "Bash(node -e \"const fs=require\\('fs'\\);const s=fs.statSync\\('index.html'\\);console.log\\('index.html =', \\(s.size/1024\\).toFixed\\(0\\)+' KB'\\);\")"
+    ]
+  }
+}
