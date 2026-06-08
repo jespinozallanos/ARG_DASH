@@ -1713,6 +1713,7 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
         let equiposFilteredData = [...MOCK_DATA];
         let currentServices = [...MOCK_SERVICES];
         let filteredServices = [...MOCK_SERVICES];
+        let dynamicIdEmpMap = {}; // Mapa dinámico de ID_EMPRESA -> Nombre Empresa
         let currentTab = 'resumen';
         let charts = {};
         let syncTimer = null;
@@ -1750,7 +1751,7 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
             sheetUrl: DEFAULT_URL,
             tabName: DEFAULT_TAB,
             serviceTabName: DEFAULT_SERVICE_TAB,
-            driveApiKey: "",
+            driveApiKey: "AIzaSyCfxq0_6b9kVrL29UQ6VygFTP2zvraTuuc",
             syncInterval: "60000",
             autosync: true,
             isUsingDemo: true
@@ -2092,11 +2093,15 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
                     console.error("Error al cargar la configuración de caché", e);
                 }
             }
+            // Asegurar que si la clave de la API está vacía, se use el valor predeterminado
+            if (!config.driveApiKey) {
+                config.driveApiKey = "AIzaSyCfxq0_6b9kVrL29UQ6VygFTP2zvraTuuc";
+            }
             // Reflejar la configuración en el formulario
             document.getElementById('sheets-url-input').value = config.sheetUrl || DEFAULT_URL;
             document.getElementById('sheets-tab-input').value = config.tabName || DEFAULT_TAB;
             document.getElementById('sheets-service-tab-input').value = config.serviceTabName || DEFAULT_SERVICE_TAB;
-            document.getElementById('drive-apikey-input').value = config.driveApiKey || "";
+            document.getElementById('drive-apikey-input').value = config.driveApiKey || "AIzaSyCfxq0_6b9kVrL29UQ6VygFTP2zvraTuuc";
             document.getElementById('sync-interval').value = config.syncInterval || "60000";
             document.getElementById('autosync-toggle').checked = config.autosync !== false;
         }
@@ -2306,13 +2311,21 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
             let gotEquipos = false;
             let gotServicios = false;
 
-            // Descargamos ambas pestañas en paralelo vía gviz JSONP (sin CORS)
-            const [eqResult, svResult] = await Promise.allSettled([
+            // Descargamos las pestañas en paralelo vía gviz JSONP (sin CORS)
+            const [eqResult, svResult, empResult] = await Promise.allSettled([
                 fetchTabViaGviz(sheetId, equiposTab),
-                fetchTabViaGviz(sheetId, serviciosTab)
+                fetchTabViaGviz(sheetId, serviciosTab),
+                fetchTabViaGviz(sheetId, "EMPRESA")
             ]);
 
-            // 1) Pestaña EQUIPOS (inventario) -> refresca la base previa con lo último
+            // 1) Pestaña EMPRESA (si existe) -> actualiza el mapa dinámico de empresas
+            if (empResult && empResult.status === 'fulfilled' && empResult.value && empResult.value.length > 0) {
+                processEmpresasData(empResult.value);
+            } else if (empResult && empResult.status === 'rejected') {
+                console.warn("No se pudo leer la pestaña EMPRESA:", empResult.reason && empResult.reason.message);
+            }
+
+            // 2) Pestaña EQUIPOS (inventario) -> refresca la base previa con lo último
             if (eqResult.status === 'fulfilled' && eqResult.value && eqResult.value.length > 0) {
                 gotEquipos = true;
                 if (processEquiposData(eqResult.value)) changed = true;
@@ -2320,7 +2333,7 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
                 console.warn("No se pudo leer la pestaña EQUIPOS:", eqResult.reason && eqResult.reason.message);
             }
 
-            // 2) Pestaña SERVICIO (bitácora) -> lo último de servicios técnicos
+            // 3) Pestaña SERVICIO (bitácora) -> lo último de servicios técnicos
             if (svResult.status === 'fulfilled' && svResult.value && svResult.value.length > 0) {
                 gotServicios = true;
                 if (processServicesData(svResult.value)) changed = true;
@@ -2371,8 +2384,40 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
         function normalizeEquipos(rawData) {
             return rawData.map((row, index) => {
                 const getVal = makeGetter(row);
+                const rawId = getVal(['id equipo', 'id_equipo', 'id', 'id_eq']);
+                const foto = getVal(['foto']);
+                
+                let eqId = String(rawId || '').trim();
+                if (!eqId && foto) {
+                    const match = String(foto).match(/EQUIPOS_Images\/([a-zA-Z0-9-_]+)\.FOTO/);
+                    if (match && match[1]) {
+                        eqId = match[1];
+                    }
+                }
+                if (!eqId) {
+                    eqId = `temp_${index + 1}`;
+                }
+
+                let idEmp = getVal(['id empresa', 'id_empresa', 'empresa', 'id_cliente', 'id cliente']);
+                const ubi = String(getVal(['ubicacion', 'ubicación', 'sector', 'local']) || '').toUpperCase();
+                if (!idEmp) {
+                    if (ubi.includes('USM VALPO') || ubi.includes('USM VALPARAISO')) {
+                        idEmp = '1001';
+                    } else if (ubi.includes('USM VIÑA CASINO') || ubi.includes('USM VIÑA')) {
+                        idEmp = '1003';
+                    } else if (ubi.includes('USM VIÑA MANTENCION') || ubi.includes('MANTENCION')) {
+                        idEmp = '1004';
+                    } else if (ubi.includes('QUILPUE')) {
+                        idEmp = '1010';
+                    } else if (ubi.includes('QUINTERO')) {
+                        idEmp = '1002';
+                    } else {
+                        idEmp = '1001';
+                    }
+                }
+
                 return {
-                    ID_EQUIPO: getVal(['id equipo', 'id_equipo', 'id', 'id_eq']) || (index + 1),
+                    ID_EQUIPO: eqId,
                     TIPO_EQUIPO: getVal(['tipo equipo', 'tipo_equipo', 'tipo', 'tipo_eq']) || 'OTROS',
                     NOMBRE_EQUIPO: getVal(['nombre equipo', 'nombre_equipo', 'nombre', 'equipo']) || 'Equipo Genérico',
                     MARCA: getVal(['marca']) || 'S/M',
@@ -2380,60 +2425,51 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
                     SERIE: getVal(['serie', 'n serie', 'n_serie']) || 'S/S',
                     UBICACION: getVal(['ubicacion', 'ubicación', 'sector', 'local']) || 'ÁREA GENERAL',
                     PERIODICIDAD: getVal(['periodicidad', 'periodicidad contratada', 'mantenimiento', 'estado']) || 'VIGENTE',
-                    ID_EMPRESA: getVal(['id empresa', 'id_empresa', 'empresa', 'id_cliente', 'id cliente']) || '1001'
+                    ID_EMPRESA: idEmp
                 };
             });
         }
 
         function resolveEquiposCompanies() {
-            // Build a map of ID_EQUIPO -> Set of EMPRESA names from services
-            const eqToEmp = {};
-            currentServices.forEach(s => {
-                const id = String(s.ID_EQUIPO || '').trim();
-                const emp = String(s.EMPRESA || '').trim();
-                if (id && emp && emp !== 'SIN EMPRESA') {
-                    if (!eqToEmp[id]) eqToEmp[id] = new Set();
-                    eqToEmp[id].add(emp);
-                }
-            });
-
-            // Build a map of ID_EMPRESA -> Set of EMPRESA names
-            const empIdToNames = {};
-            currentData.forEach(e => {
-                const idEq = String(e.ID_EQUIPO || '').trim();
-                const idEmp = String(e.ID_EMPRESA || '').trim();
-                const names = eqToEmp[idEq];
-                if (idEmp && names) {
-                    if (!empIdToNames[idEmp]) empIdToNames[idEmp] = new Set();
-                    names.forEach(n => empIdToNames[idEmp].add(n));
-                }
-            });
-
-            // Pre-defined mapping for fallback/baseline data if they aren't mapped in services yet
+            // Mapa estático completo de respaldo para las 19 empresas reales
             const defaultIdEmpMap = {
                 '1001': 'USM VALPO',
-                '1002': 'USM VIÑA CASINO',
-                '1003': 'ARTEMASA'
+                '1002': 'HOSPITAL DE QUINTERO',
+                '1003': 'USM VIÑA CASINO',
+                '1004': 'USM VIÑA DPTO MANTENCIÓN',
+                '1005': 'NOTARIA STACK',
+                '1006': 'ARTEMASA',
+                '1007': 'UNAB',
+                '1008': 'U.V.',
+                '1009': 'SSVQ',
+                '1010': 'HOSPITAL QUILPUE',
+                '1011': 'ESFOCAR',
+                '1012': 'CASA HUESPEDES HOSPITAL NAVAL',
+                '1013': 'NOVOTEL',
+                '1014': 'APOLINAV',
+                '1015': 'SENADO',
+                '1016': 'FRIGORIFICO JELEN',
+                '1017': 'PATAGONIA AUSTRAL',
+                '1018': 'USM VALPO EX BOLSA VALORES',
+                '1019': 'SSVQ RED SALUD'
             };
 
-            // Now, assign the EMPRESA name to each equipment
             currentData.forEach(e => {
-                const idEq = String(e.ID_EQUIPO || '').trim();
                 const idEmp = String(e.ID_EMPRESA || '').trim();
+                // Prioriza mapa dinámico cargado de Sheets; cae en el mapa estático de respaldo
+                e.EMPRESA = dynamicIdEmpMap[idEmp] || defaultIdEmpMap[idEmp] || `Empresa ${idEmp}`;
+            });
+        }
 
-                // 1. Try to get company from services of this specific equipment
-                const directNames = eqToEmp[idEq];
-                if (directNames && directNames.size > 0) {
-                    e.EMPRESA = Array.from(directNames)[0]; // Use the first matching name
-                } else {
-                    // 2. Try to get company name from ID_EMPRESA mapping
-                    const mappedNames = empIdToNames[idEmp];
-                    if (mappedNames && mappedNames.size > 0) {
-                        e.EMPRESA = Array.from(mappedNames)[0];
-                    } else {
-                        // 3. Fallback to predefined mapping
-                        e.EMPRESA = defaultIdEmpMap[idEmp] || `Empresa ${idEmp}`;
-                    }
+        // Procesa la pestaña EMPRESA.
+        function processEmpresasData(rawData) {
+            dynamicIdEmpMap = {};
+            rawData.forEach(row => {
+                const getVal = makeGetter(row);
+                const idEmp = String(getVal(['id_empresa', 'id empresa', 'id']) || '').trim();
+                const nombreEmp = String(getVal(['nombre empresa', 'nombre_empresa', 'empresa', 'nombre']) || '').trim();
+                if (idEmp && nombreEmp) {
+                    dynamicIdEmpMap[idEmp] = nombreEmp;
                 }
             });
         }
@@ -2472,12 +2508,12 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
                 const servDate = parseServiceDate(normalizedDate);
                 if (servDate < cutOffDate) return null;
 
-                const idEquipo = getVal(['id equipo', 'id_equipo', 'id_eq', 'id equipo']);
+                const idEquipo = String(getVal(['id equipo', 'id_equipo', 'id_eq', 'id equipo']) || '').trim();
                 const idServicio = getVal(['id servicio', 'id_servicio', 'idservicio', 'id']);
                 const tipoEquipo = getVal(['tipo equipo', 'tipo_equipo', 'tipo', 'categoria', 'categoría']) || 'OTROS';
 
                 // Resolver tipo de equipo cruzando con el inventario
-                const eqInfo = idEquipo ? equiposPorId[String(idEquipo).trim()] : null;
+                const eqInfo = idEquipo ? equiposPorId[idEquipo] : null;
                 let resolvedTipo = '';
                 if (eqInfo) {
                     resolvedTipo = eqInfo.TIPO_EQUIPO;
@@ -2507,9 +2543,13 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
 
                 const pdf = getVal(['ruta_pdf', 'ruta pdf', 'pdf link', 'pdf_link', 'pdf', 'informe', 'link', 'enlace', 'reporte', 'url', 'archivo', 'documento', 'adjunto']);
 
+                // Resolver la empresa del servicio a la empresa oficial del equipo para evitar mezclas por errores manuales
+                const rawEmpresa = getVal(['nombre empresa', 'empresa', 'cliente', 'empresa / cliente', 'empresa cliente', 'razon social']) || 'SIN EMPRESA';
+                const resolvedEmpresa = eqInfo ? eqInfo.EMPRESA : rawEmpresa;
+
                 return {
                     FECHA: normalizedDate,
-                    EMPRESA: getVal(['nombre empresa', 'empresa', 'cliente', 'empresa / cliente', 'empresa cliente', 'razon social']) || 'SIN EMPRESA',
+                    EMPRESA: resolvedEmpresa,
                     EQUIPO: nombreEquipo,
                     ID_EQUIPO: idEquipo,
                     TIPO_EQUIPO: resolvedTipo,
@@ -2859,13 +2899,7 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
                 const matchMarca = !dashboardFilters.marca || item.MARCA === dashboardFilters.marca;
                 const matchUbi = !dashboardFilters.ubicacion || item.UBICACION === dashboardFilters.ubicacion;
 
-                let matchEmpresa = true;
-                if (empresaSel.length > 0) {
-                    const equiposDeEmpresa = currentServices
-                        .filter(s => empresaSel.includes(s.EMPRESA))
-                        .map(s => s.EQUIPO.trim().toUpperCase());
-                    matchEmpresa = equiposDeEmpresa.includes(item.NOMBRE_EQUIPO.trim().toUpperCase());
-                }
+                const matchEmpresa = empresaSel.length === 0 || empresaSel.includes(item.EMPRESA);
 
                 // Filtrar por estado actual
                 let matchEstado = true;
@@ -2932,21 +2966,36 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
             if (currentTab === 'mantenimiento') computeMaintenance();
         }
 
-        // Parsear fecha en formato "DD/MM/YYYY HH:MM:SS"
+        // Parsear fecha tolerando múltiples formatos (DD/MM/YYYY, YYYY-MM-DD, ISO)
         function parseServiceDate(dateStr) {
             try {
                 if (!dateStr) return new Date(0);
-                const parts = dateStr.split(' ');
-                const dateParts = parts[0].split('/');
-                const year = parseInt(dateParts[2]);
-                const month = parseInt(dateParts[1]) - 1;
-                const day = parseInt(dateParts[0]);
-                if (isNaN(year) || isNaN(month) || isNaN(day)) {
-                    return new Date(0);
+                const s = String(dateStr).trim();
+                
+                // Si ya contiene guión, probablemente es YYYY-MM-DD
+                if (s.includes('-')) {
+                    const d = new Date(s.replace(' ', 'T'));
+                    if (!isNaN(d.getTime()) && d.getFullYear() > 1970) return d;
                 }
-                const d = new Date(year, month, day);
-                if (isNaN(d.getTime())) return new Date(0);
-                return d;
+                
+                // Formato tradicional DD/MM/YYYY
+                const parts = s.split(' ');
+                const dateParts = parts[0].split('/');
+                if (dateParts.length === 3) {
+                    const day = parseInt(dateParts[0], 10);
+                    const month = parseInt(dateParts[1], 10) - 1;
+                    const year = parseInt(dateParts[2], 10);
+                    if (!isNaN(year) && !isNaN(month) && !isNaN(day)) {
+                        const d = new Date(year, month, day);
+                        if (!isNaN(d.getTime())) return d;
+                    }
+                }
+
+                // Fallback directo a parseador nativo
+                const fallbackDate = new Date(s);
+                if (!isNaN(fallbackDate.getTime())) return fallbackDate;
+                
+                return new Date(0);
             } catch(e) {
                 return new Date(0);
             }
@@ -3066,24 +3115,29 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
                 }
             });
 
-            const totalEquipos = filteredData.length;
             const deBaja = filteredData.filter(e => e.PERIODICIDAD.toUpperCase().includes('DE BAJA') || e.PERIODICIDAD.toUpperCase().includes('BAJA')).length;
             const fueraContrato = filteredData.filter(e => e.PERIODICIDAD.toUpperCase().includes('FUERA CONTRATO') || e.PERIODICIDAD.toUpperCase().includes('FUERA')).length;
-            
-            // Contar inoperativos según el último reporte de servicio
-            let inoperativosPorServicio = 0;
-            filteredData.forEach(e => {
-                if (e.PERIODICIDAD.toUpperCase().includes('DE BAJA') || e.PERIODICIDAD.toUpperCase().includes('BAJA')) return;
+
+            // Flota activa bajo contrato
+            const activeContractFleet = filteredData.filter(e => {
+                const p = e.PERIODICIDAD.toUpperCase();
+                return !p.includes('BAJA') && !p.includes('FUERA');
+            });
+            const totalActivos = activeContractFleet.length;
+
+            // Contar inoperativos según el último reporte de servicio dentro de la flota activa bajo contrato
+            let inoperativosActivos = 0;
+            activeContractFleet.forEach(e => {
                 const eqId = String(e.ID_EQUIPO).trim();
                 const lastServ = lastServiceByEquipment[eqId];
                 if (lastServ && lastServ.isOperativo === false) {
-                    inoperativosPorServicio++;
+                    inoperativosActivos++;
                 }
             });
 
-            const operativos = totalEquipos - deBaja - inoperativosPorServicio;
+            const operativosActivos = totalActivos - inoperativosActivos;
 
-            document.getElementById('kpi-equipos-operativos').innerText = `${operativos} / ${totalEquipos}`;
+            document.getElementById('kpi-equipos-operativos').innerText = `${operativosActivos} / ${totalActivos}`;
             document.getElementById('kpi-equipos-operativos-sub').innerText = `${deBaja} de baja • ${fueraContrato} fuera contrato`;
 
             // Helper para calcular líder de servicios
@@ -3240,6 +3294,7 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
             const porEmpresa = rank(serv, s => s.EMPRESA && s.EMPRESA !== 'SIN EMPRESA' ? s.EMPRESA : null);
             const porTipo = rank(serv, s => s.TIPO_EQUIPO);
             const porEquipo = rank(serv, s => s.EQUIPO);
+            const porEquipoFallas = rank(noOperativos, s => s.EQUIPO);
             const porTipoNoOp = rank(noOperativos, s => s.TIPO_EQUIPO);
 
             // --- KPIs superiores ---
@@ -3247,7 +3302,7 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
             const subMes = document.getElementById('analisis-servicios-mes-sub');
             if (subMes) subMes.innerText = `Intervenciones de ${periodo.monthName} ${periodo.year}`;
             document.getElementById('analisis-tasa-criticidad').innerText = `${rate}%`;
-            document.getElementById('analisis-cuello-botella').innerText = porEquipo.length ? `${porEquipo[0][0]} (${porEquipo[0][1]})` : "Estable";
+            document.getElementById('analisis-cuello-botella').innerText = porEquipoFallas.length ? `${porEquipoFallas[0][0]} (${porEquipoFallas[0][1]})` : "Estable";
 
             // --- Diagnóstico operativo (texto dinámico) ---
             const opTit = document.getElementById('analisis-op-titulo');
@@ -3299,7 +3354,7 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
 
             // --- Recomendaciones: BAJAR COSTOS / RAPIDEZ ---
             const costos = [];
-            const equiposReincidentes = porEquipo.filter(x => x[1] >= 3).slice(0, 3);
+            const equiposReincidentes = porEquipoFallas.filter(x => x[1] >= 3).slice(0, 3);
             if (equiposReincidentes.length) {
                 const lista = equiposReincidentes.map(x => `${x[0]} (${x[1]})`).join(', ');
                 costos.push(`<strong>Evaluar reemplazo:</strong> ${lista} acumulan muchas visitas. Reemplazar estos activos elimina visitas repetidas y baja el costo de mantención.`);
@@ -3378,7 +3433,7 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
             currentData.forEach(e => { const id = String(e.ID_EQUIPO).trim(); if(id) equiposPorId[id] = e; });
             const ubicacionDe = (s) => { const inv = equiposPorId[String(s.ID_EQUIPO).trim()]; return inv ? inv.UBICACION : (s.UBICACION||''); };
 
-            // Ventana temporal: rango de fechas si está definido; si no, últimos 12 meses
+            // Ventana temporal: rango de fechas si está definido; si no, últimos 12 meses para urg12 y corr12
             const winStart = mantFilters.fechaInicio ? new Date(mantFilters.fechaInicio + 'T00:00:00') : monthsAgoDate(12);
             const winEnd = mantFilters.fechaFin ? new Date(mantFilters.fechaFin + 'T23:59:59') : new Date(8640000000000000);
             const dateOK = (d) => (!mantFilters.fechaInicio || d >= winStart) && (!mantFilters.fechaFin || d <= winEnd);
@@ -3392,7 +3447,10 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
                 if(mantFilters.equipo && (s.EQUIPO||'').trim() !== mantFilters.equipo) return false;
                 return true;
             };
-            const servs = currentServices.filter(s => s.FECHA && pasaFiltro(s) && dateOK(parseServiceDate(s.FECHA))).map(s => ({ s, d: parseServiceDate(s.FECHA) }));
+            
+            // Evaluamos la totalidad de servicios del equipo para obtener el historial correcto de preventivas,
+            // pero las urgencias y fallas correctivas se cuentan sólo si caen dentro de la ventana de fechas.
+            const servs = currentServices.filter(s => s.FECHA && pasaFiltro(s)).map(s => ({ s, d: parseServiceDate(s.FECHA) }));
             servs.sort((a,b) => a.d - b.d); // ascendente: el último queda al final
             const eq = {};
             servs.forEach(({s, d}) => {
@@ -3404,7 +3462,7 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
                 const e = eq[k];
                 if(s.EMPRESA) e.empresa = s.EMPRESA;
                 e.ultimoServicio = s; e.ultimoDate = d;
-                if(d >= winStart && d <= winEnd){
+                if(dateOK(d)){
                     if(esUrgencia(s)) e.urg12++;
                     if(esCorrectiva(s)){ e.corr12++; const mk = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); e.corrByMonth[mk] = (e.corrByMonth[mk]||0)+1; }
                 }
@@ -3711,11 +3769,21 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
             renderHeatmap(tendTop, meses12);
 
             // ===== PRÓXIMAS MANTENCIONES =====
+            const filterStart = mantFilters.fechaInicio ? new Date(mantFilters.fechaInicio + 'T00:00:00') : null;
+            const filterEnd = mantFilters.fechaFin ? new Date(mantFilters.fechaFin + 'T23:59:59') : null;
+
             const proximas = [];
             list.forEach(e=>{
                 const meses = periodicidadMeses(e.periodicidad);
-                if(!e.ultimaPrev || !meses) return;
-                proximas.push({ ...e, meses, prox: addMonths(e.ultimaPrev, meses) });
+                // Evitamos fechas de época inválidas (como 01/01/1970 por fallos de parseo)
+                if(!e.ultimaPrev || !meses || e.ultimaPrev.getTime() === 0) return;
+                const prox = addMonths(e.ultimaPrev, meses);
+                
+                // Filtramos por fecha proyectada si la ventana está definida
+                if (filterStart && prox < filterStart) return;
+                if (filterEnd && prox > filterEnd) return;
+                
+                proximas.push({ ...e, meses, prox });
             });
             proximas.sort((a,b)=> a.prox - b.prox);
             const proxRows = proximas.map(e=>
