@@ -559,10 +559,15 @@
                                             <span>Exportar seleccionados a CSV</span>
                                         </button>
                                         <div class="h-px bg-slate-150 dark:bg-slate-850 my-1"></div>
-                                        <button type="button" onclick="printSelectedServices(); closeServicesActionsDropdown();" id="btn-print-selected" class="w-full flex items-center space-x-2 px-3 py-2 rounded-lg text-left font-medium transition-all text-slate-400 cursor-not-allowed" disabled>
-                                            <i data-lucide="printer" class="w-4 h-4 text-sky-500"></i>
-                                            <span>Imprimir seleccionados</span>
+                                        <button type="button" onclick="exportServicesToPDF(false); closeServicesActionsDropdown();" class="w-full flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-900 text-left font-medium transition-all text-slate-700 dark:text-slate-300">
+                                            <i data-lucide="file-text" class="w-4 h-4 text-sky-500"></i>
+                                            <span>Exportar todos a PDF</span>
                                         </button>
+                                        <button type="button" onclick="exportServicesToPDF(true); closeServicesActionsDropdown();" id="btn-print-selected" class="w-full flex items-center space-x-2 px-3 py-2 rounded-lg text-left font-medium transition-all text-slate-400 cursor-not-allowed" disabled>
+                                            <i data-lucide="printer" class="w-4 h-4 text-sky-600"></i>
+                                            <span>Exportar seleccionados a PDF</span>
+                                        </button>
+                                        <div class="h-px bg-slate-150 dark:bg-slate-850 my-1"></div>
                                         <button type="button" onclick="clearServicesSelection(); closeServicesActionsDropdown();" id="btn-clear-selection" class="w-full flex items-center space-x-2 px-3 py-2 rounded-lg text-left font-medium transition-all text-slate-400 cursor-not-allowed" disabled>
                                             <i data-lucide="square" class="w-4 h-4 text-rose-500"></i>
                                             <span>Limpiar selección</span>
@@ -588,7 +593,7 @@
                                         <!-- Checkbox Selección -->
                                         <th class="px-2 py-3 no-print text-center">
                                             <div class="flex items-center justify-center">
-                                                <input type="checkbox" id="dash-services-select-all" onchange="toggleSelectAllServices(this.checked)" class="rounded text-primary-600 focus:ring-primary-500 bg-transparent border-slate-350 dark:border-slate-700 w-4.5 h-4.5 cursor-pointer">
+                                                <input type="checkbox" id="dash-services-select-all" onchange="toggleSelectAllServices(this.checked)" class="rounded text-primary-600 focus:ring-primary-500 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 w-4.5 h-4.5 cursor-pointer">
                                             </div>
                                         </th>
                                         <!-- Fecha -->
@@ -3271,7 +3276,7 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
             if (currentTab === 'mantenimiento') computeMaintenance();
         }
 
-        // Parsear fecha tolerando múltiples formatos (DD/MM/YYYY, YYYY-MM-DD, ISO)
+        // Parsear fecha tolerando múltiples formatos (DD/MM/YYYY, YYYY-MM-DD, ISO) y extrayendo hora, minutos y segundos
         function parseServiceDate(dateStr) {
             try {
                 if (!dateStr) return new Date(0);
@@ -3283,15 +3288,26 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
                     if (!isNaN(d.getTime()) && d.getFullYear() > 1970) return d;
                 }
                 
-                // Formato tradicional DD/MM/YYYY
+                // Formato tradicional DD/MM/YYYY con o sin hora HH:MM:SS
                 const parts = s.split(' ');
                 const dateParts = parts[0].split('/');
                 if (dateParts.length === 3) {
                     const day = parseInt(dateParts[0], 10);
                     const month = parseInt(dateParts[1], 10) - 1;
                     const year = parseInt(dateParts[2], 10);
+                    
+                    let hour = 0, minute = 0, second = 0;
+                    if (parts[1]) {
+                        const timeParts = parts[1].split(':');
+                        if (timeParts.length >= 2) {
+                            hour = parseInt(timeParts[0], 10) || 0;
+                            minute = parseInt(timeParts[1], 10) || 0;
+                            second = parseInt(timeParts[2], 10) || 0;
+                        }
+                    }
+                    
                     if (!isNaN(year) && !isNaN(month) && !isNaN(day)) {
-                        const d = new Date(year, month, day);
+                        const d = new Date(year, month, day, hour, minute, second);
                         if (!isNaN(d.getTime())) return d;
                     }
                 }
@@ -3571,6 +3587,32 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
             });
         }
 
+        function getSortedServicesForExport(selectedOnly) {
+            applyColumnFilters();
+            let list = [...columnFilteredServices];
+            if (selectedOnly) {
+                list = list.filter(s => selectedServiceIds.has(s._id));
+            }
+            list.sort((a, b) => {
+                const col = servicesSortConfig.column;
+                const dir = servicesSortConfig.direction;
+                
+                if (col === 'FECHA') {
+                    const dA = parseServiceDate(a.FECHA);
+                    const dB = parseServiceDate(b.FECHA);
+                    return dir === 'desc' ? dB - dA : dA - dB;
+                }
+                
+                let valA = String(a[col] || '').toLowerCase().trim();
+                let valB = String(b[col] || '').toLowerCase().trim();
+                
+                if (valA < valB) return dir === 'desc' ? 1 : -1;
+                if (valA > valB) return dir === 'desc' ? -1 : 1;
+                return 0;
+            });
+            return list;
+        }
+
         function renderDashboardServicesTable() {
             const tableBody = document.getElementById('dash-services-table-body');
             const noResults = document.getElementById('dash-services-no-results');
@@ -3593,23 +3635,7 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
             noResults.classList.add('hidden');
 
             // 2. Ordenar dinámicamente según servicesSortConfig
-            const ordenados = [...columnFilteredServices].sort((a, b) => {
-                const col = servicesSortConfig.column;
-                const dir = servicesSortConfig.direction;
-                
-                if (col === 'FECHA') {
-                    const dA = parseServiceDate(a.FECHA);
-                    const dB = parseServiceDate(b.FECHA);
-                    return dir === 'desc' ? dB - dA : dA - dB;
-                }
-                
-                let valA = String(a[col] || '').toLowerCase().trim();
-                let valB = String(b[col] || '').toLowerCase().trim();
-                
-                if (valA < valB) return dir === 'desc' ? 1 : -1;
-                if (valA > valB) return dir === 'desc' ? -1 : 1;
-                return 0;
-            });
+            const ordenados = getSortedServicesForExport(false);
 
             const visibles = ordenados.slice(0, servicesVisibleCount);
 
@@ -3644,7 +3670,7 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
                 const checkboxCell = `
                     <td class="px-2 py-3 no-print text-center">
                         <div class="flex items-center justify-center">
-                            <input type="checkbox" onchange="toggleSelectService('${item._id}', this.checked)" ${isChecked} class="rounded text-primary-600 focus:ring-primary-500 bg-transparent border-slate-350 dark:border-slate-700 w-4.5 h-4.5 cursor-pointer">
+                            <input type="checkbox" onchange="toggleSelectService('${item._id}', this.checked)" ${isChecked} class="rounded text-primary-600 focus:ring-primary-500 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 w-4.5 h-4.5 cursor-pointer">
                         </div>
                     </td>
                 `;
@@ -3961,9 +3987,7 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
 
         // --- EXPORTAR BITÁCORA DE SERVICIOS (CSV / PDF IMPRESORA) ---
         function exportServicesToCSV(selectedOnly) {
-            const targetServices = selectedOnly 
-                ? columnFilteredServices.filter(s => selectedServiceIds.has(s._id))
-                : columnFilteredServices;
+            const targetServices = getSortedServicesForExport(selectedOnly);
             
             if (targetServices.length === 0) {
                 showToast("No hay registros que exportar", "alert-triangle", "bg-amber-500 text-white");
@@ -3971,16 +3995,16 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
             }
 
             // Mapeo ordenado para exportación
-            const csvData = targetServices.map(s => ({
-                'Fecha': s.FECHA,
-                'Empresa / Cliente': s.EMPRESA,
-                'Tipo de Equipo': s.TIPO_EQUIPO,
-                'Equipo Intervenido': s.EQUIPO,
-                'Observaciones': s.OBSERVACIONES || '',
-                'Tipo Visita': s.TIPO_VISITA || '',
-                'Estado': s.ESTADO || '',
-                'Informe PDF': s.PDF_LINK || ''
-            }));
+            const csvData = targetServices.map(s => {
+                const eqText = s.EQUIPO + (s.TIPO_VISITA ? ` (${s.TIPO_VISITA})` : '');
+                return {
+                    'Fecha': s.FECHA,
+                    'Empresa / Cliente': s.EMPRESA,
+                    'Tipo de Equipo': s.TIPO_EQUIPO,
+                    'Equipo Intervenido': eqText,
+                    'Observaciones': (s.OBSERVACIONES || '').replace(/<[^>]*>/g, '') // Limpiar etiquetas HTML de observaciones si las hay
+                };
+            });
             
             try {
                 const csvString = Papa.unparse(csvData);
@@ -4002,39 +4026,48 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
             }
         }
 
-        function printSelectedServices() {
-            const selected = columnFilteredServices.filter(s => selectedServiceIds.has(s._id));
-            if (selected.length === 0) {
-                showToast("Ningún registro seleccionado para impresión", "alert-triangle", "bg-amber-500 text-white");
+        function exportServicesToPDF(selectedOnly) {
+            const targetServices = getSortedServicesForExport(selectedOnly);
+            
+            if (targetServices.length === 0) {
+                showToast("Ningún registro para exportar a PDF", "alert-triangle", "bg-amber-500 text-white");
                 return;
             }
             
-            // Ordenar por fecha desc para la visualización impresa
-            selected.sort((a, b) => parseServiceDate(b.FECHA) - parseServiceDate(a.FECHA));
+            const rows = targetServices.map(s => {
+                const eqText = escapeHtml(s.EQUIPO) + (s.TIPO_VISITA ? ` <span style="font-size:8px;background:#f1f5f9;color:#64748b;padding:2px 6px;border-radius:9999px;margin-left:4px;font-weight:bold;display:inline-block">${escapeHtml(s.TIPO_VISITA)}</span>` : '');
+                return `<tr>
+                    <td style="white-space: nowrap;">${escapeHtml(s.FECHA)}</td>
+                    <td><b>${escapeHtml(s.EMPRESA)}</b></td>
+                    <td>${escapeHtml(s.TIPO_EQUIPO)}</td>
+                    <td>${eqText}</td>
+                    <td>${formatObsHTML(s.OBSERVACIONES)}</td>
+                </tr>`;
+            }).join('');
             
-            const rows = selected.map(s => `<tr>
-                <td>${escapeHtml(s.FECHA)}</td>
-                <td>${escapeHtml(s.EMPRESA)}</td>
-                <td>${escapeHtml(s.TIPO_EQUIPO)}</td>
-                <td>${escapeHtml(s.EQUIPO)}</td>
-                <td>${formatObsHTML(s.OBSERVACIONES)}</td>
-                <td>${escapeHtml(s.TIPO_VISITA || '-')}</td>
-                <td>${escapeHtml(s.ESTADO || '-')}</td>
-            </tr>`).join('');
-            
+            const title = selectedOnly ? 'Bitácora de Servicios Seleccionados' : 'Bitácora de Servicios Filtrados';
             const win = window.open('', '_blank');
-            win.document.write(`<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><title>Bitácora de Servicios Seleccionados</title>
-                <style>body{font-family:Arial,sans-serif;padding:24px;color:#0f172a}h1{font-size:18px;margin:0 0 4px}p.sub{color:#64748b;font-size:12px;margin:0 0 16px}
-                table{width:100%;border-collapse:collapse;font-size:10px}th,td{border:1px solid #cbd5e1;padding:6px 8px;text-align:left;vertical-align:top}
-                th{background:#f1f5f9;text-transform:uppercase;font-size:9px;letter-spacing:.04em}tr:nth-child(even){background:#f8fafc}
-                @media print{.noprint{display:none}}</style></head><body>
-                <h1>Bitácora de Servicios Seleccionados</h1>
-                <p class="sub">Generado: ${new Date().toLocaleString('es-CL')} — Total de registros: ${selected.length}</p>
-                <button class="noprint" onclick="window.print()" style="margin-bottom:12px;padding:8px 14px;background:#0284c7;color:#fff;border:none;border-radius:6px;cursor:pointer">Imprimir / Guardar PDF</button>
-                <table><thead><tr><th>Fecha</th><th>Cliente</th><th>Tipo de Equipo</th><th>Equipo</th><th>Observaciones</th><th>Tipo Visita</th><th>Estado</th></tr></thead>
+            win.document.write(`<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><title>${title}</title>
+                <style>
+                    body{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;padding:24px;color:#0f172a;background:#fff}
+                    h1{font-size:18px;margin:0 0 4px;color:#0f172a}
+                    p.sub{color:#64748b;font-size:12px;margin:0 0 16px}
+                    table{width:100%;border-collapse:collapse;font-size:10px}
+                    th,td{border:1px solid #cbd5e1;padding:8px 10px;text-align:left;vertical-align:top}
+                    th{background:#f1f5f9;color:#475569;text-transform:uppercase;font-size:8px;letter-spacing:.05em;font-weight:700}
+                    tr:nth-child(even){background:#f8fafc}
+                    @media print{.noprint{display:none}}
+                </style></head><body>
+                <h1 style="display:flex;align-items:center;gap:8px;">
+                    <span style="background:#10b981;width:12px;height:12px;border-radius:3px;display:inline-block"></span>
+                    ${title}
+                </h1>
+                <p class="sub">Generado el: ${new Date().toLocaleString('es-CL')} — Total de registros: ${targetServices.length}</p>
+                <button class="noprint" onclick="window.print()" style="margin-bottom:16px;padding:8px 16px;background:#10b981;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:bold;font-size:11px;transition:background 0.2s">Imprimir / Guardar PDF</button>
+                <table><thead><tr><th>Fecha</th><th>Empresa / Cliente</th><th>Tipo de Equipo</th><th>Equipo Intervenido</th><th>Observaciones</th></tr></thead>
                 <tbody>${rows}</tbody></table></body></html>`);
             win.document.close();
-            showToast("Reporte de impresión generado", "printer", "bg-emerald-600 text-white");
+            showToast("Reporte PDF generado", "file-text", "bg-emerald-600 text-white");
         }
 
         // --- CÁLCULO DE INTELIGENCIA DE NEGOCIOS Y ANALÍTICA (orientada a Ventas · Costos · Rapidez) ---
