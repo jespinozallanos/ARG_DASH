@@ -3162,24 +3162,39 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
             const hasDateFilter = !!(dashboardFilters.fechaInicio || dashboardFilters.fechaFin);
             const eqIdsWithServicesInDateRange = new Set();
 
-            // Mapear el último estado por equipo basándose en la fecha del servicio
-            const lastServiceByEquipment = {};
+            // Mapear el último estado por equipo basándose en la fecha del servicio.
+            // Se indexa por ID_EQUIPO (primario) y por nombre EQUIPO (fallback cuando ID está vacío).
+            const lastServiceByEquipment = {};  // clave: ID_EQUIPO
+            const lastServiceByEquipName = {};  // clave: nombre EQUIPO (fallback)
             currentServices.forEach(s => {
-                if (!s.FECHA || !s.ID_EQUIPO) return;
-                const eqId = String(s.ID_EQUIPO).trim().toUpperCase();
+                if (!s.FECHA) return;
                 const d = parseServiceDate(s.FECHA);
 
-                // No considerar servicios posteriores a la fecha fin del filtro para determinar el estado de ese momento
+                // No considerar servicios posteriores a la fecha fin del filtro
                 if (dashboardFilters.fechaFin) {
                     const endDate = new Date(dashboardFilters.fechaFin + "T23:59:59");
                     if (d > endDate) return;
                 }
 
-                if (!lastServiceByEquipment[eqId] || d > lastServiceByEquipment[eqId].d) {
-                    lastServiceByEquipment[eqId] = { d, status: (s.ESTADO || '').trim().toUpperCase() };
+                const estado = (s.ESTADO || '').trim().toUpperCase();
+
+                // Indexar por ID_EQUIPO si existe
+                if (s.ID_EQUIPO) {
+                    const eqId = String(s.ID_EQUIPO).trim().toUpperCase();
+                    if (!lastServiceByEquipment[eqId] || d > lastServiceByEquipment[eqId].d) {
+                        lastServiceByEquipment[eqId] = { d, status: estado };
+                    }
                 }
 
-                // Si cae dentro de la ventana de fecha del filtro, lo registramos como activo en el periodo
+                // Indexar SIEMPRE por nombre (fallback)
+                const eqName = (s.EQUIPO || '').trim().toUpperCase();
+                if (eqName) {
+                    if (!lastServiceByEquipName[eqName] || d > lastServiceByEquipName[eqName].d) {
+                        lastServiceByEquipName[eqName] = { d, status: estado };
+                    }
+                }
+
+                // Registrar en rango de fechas para el filtro de fecha activo
                 let inRange = true;
                 if (dashboardFilters.fechaInicio) {
                     const startDate = new Date(dashboardFilters.fechaInicio + "T00:00:00");
@@ -3189,8 +3204,8 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
                     const endDate = new Date(dashboardFilters.fechaFin + "T23:59:59");
                     if (d > endDate) inRange = false;
                 }
-                if (inRange) {
-                    eqIdsWithServicesInDateRange.add(eqId);
+                if (inRange && s.ID_EQUIPO) {
+                    eqIdsWithServicesInDateRange.add(String(s.ID_EQUIPO).trim().toUpperCase());
                 }
             });
 
@@ -3210,13 +3225,15 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
 
                 const eqId = String(item.ID_EQUIPO).trim().toUpperCase();
 
-                // Filtrar por estado actual
+                // Filtrar por estado actual del equipo (último servicio).
+                // Busca primero por ID_EQUIPO; si no existe entrada, usa nombre como fallback.
                 let matchEstado = true;
                 if (dashboardFilters.estado) {
-                    const lastServ = lastServiceByEquipment[eqId];
-                    const lastStatus = lastServ ? lastServ.status : '';
-                    // Normalizar el valor del filtro: 'no-operativo' o 'NO OPERATIVO' -> 'NO OPERATIVO'
                     const filterEstado = dashboardFilters.estado.replace(/-/g, ' ').toUpperCase().trim();
+                    const lastServById   = lastServiceByEquipment[eqId];
+                    const lastServByName = lastServiceByEquipName[itemNombre];
+                    const lastServ  = lastServById || lastServByName;
+                    const lastStatus = lastServ ? lastServ.status : '';
                     matchEstado = lastStatus === filterEstado;
                 }
 
@@ -3653,14 +3670,23 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
 
             const visibles = ordenados.slice(0, servicesVisibleCount);
 
-            // Mapa del _id del último servicio por equipo (para pintar el punto rojo solo en esa fila)
-            const lastServiceIdPerEquipo = {};
+            // Mapa del _id del último servicio por equipo para el punto rojo.
+            // Indexado por ID_EQUIPO (primario) y por nombre EQUIPO (fallback cuando ID está vacío).
+            const lastServiceIdPerEquipo     = {};  // clave: ID_EQUIPO
+            const lastServiceIdPerEquipoName = {};  // clave: nombre EQUIPO
             columnFilteredServices.forEach(s => {
-                const eqId = String(s.ID_EQUIPO || '').trim().toUpperCase();
-                if (!eqId) return;
-                const d = parseServiceDate(s.FECHA);
-                if (!lastServiceIdPerEquipo[eqId] || d > lastServiceIdPerEquipo[eqId].d) {
-                    lastServiceIdPerEquipo[eqId] = { _id: s._id, d };
+                const d      = parseServiceDate(s.FECHA);
+                const eqId   = String(s.ID_EQUIPO || '').trim().toUpperCase();
+                const eqName = (s.EQUIPO || '').trim().toUpperCase();
+                if (eqId) {
+                    if (!lastServiceIdPerEquipo[eqId] || d > lastServiceIdPerEquipo[eqId].d) {
+                        lastServiceIdPerEquipo[eqId] = { _id: s._id, d };
+                    }
+                }
+                if (eqName) {
+                    if (!lastServiceIdPerEquipoName[eqName] || d > lastServiceIdPerEquipoName[eqName].d) {
+                        lastServiceIdPerEquipoName[eqName] = { _id: s._id, d };
+                    }
                 }
             });
 
@@ -3670,8 +3696,13 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
                 const tr = document.createElement('tr');
                 tr.className = "hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors";
 
-                const eqId = String(item.ID_EQUIPO || '').trim().toUpperCase();
-                const isLastService = eqId && lastServiceIdPerEquipo[eqId] && lastServiceIdPerEquipo[eqId]._id === item._id;
+                const eqId   = String(item.ID_EQUIPO || '').trim().toUpperCase();
+                const eqName = (item.EQUIPO || '').trim().toUpperCase();
+                // Buscar último servicio del equipo: primero por ID, luego por nombre como fallback
+                const lastById   = eqId   ? lastServiceIdPerEquipo[eqId]         : null;
+                const lastByName = eqName ? lastServiceIdPerEquipoName[eqName]   : null;
+                const lastEntry  = lastById || lastByName;
+                const isLastService = !!(lastEntry && lastEntry._id === item._id);
                 const isCritical = isLastService && item.OPERATIVO === false;
 
                 const alertIndicator = isCritical ? `<span class="inline-block w-2.5 h-2.5 rounded-full bg-rose-500 mr-2 animate-ping flex-shrink-0" title="Equipo No Operativo"></span>` : '';
