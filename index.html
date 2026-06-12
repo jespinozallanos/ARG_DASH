@@ -1953,6 +1953,7 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
         let filteredServices = [...MOCK_SERVICES];
         let dynamicIdEmpMap = {}; // Mapa dinámico de ID_EMPRESA -> Nombre Empresa
         let lastServiceByEquipment = {}; // Estado más reciente de cada equipo (OPERATIVO, LIMITADO, etc.)
+        let lastServiceByEquipName = {}; // Clave: nombre EQUIPO (fallback)
         let currentTab = 'resumen';
         let charts = {};
         let syncTimer = null;
@@ -3164,8 +3165,8 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
 
             // Mapear el último estado por equipo basándose en la fecha del servicio.
             // Se indexa por ID_EQUIPO (primario) y por nombre EQUIPO (fallback cuando ID está vacío).
-            const lastServiceByEquipment = {};  // clave: ID_EQUIPO
-            const lastServiceByEquipName = {};  // clave: nombre EQUIPO (fallback)
+            lastServiceByEquipment = {};  // clave: ID_EQUIPO
+            lastServiceByEquipName = {};  // clave: nombre EQUIPO (fallback)
             currentServices.forEach(s => {
                 if (!s.FECHA) return;
                 const d = parseServiceDate(s.FECHA);
@@ -3182,7 +3183,7 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
                 if (s.ID_EQUIPO) {
                     const eqId = String(s.ID_EQUIPO).trim().toUpperCase();
                     if (!lastServiceByEquipment[eqId] || d > lastServiceByEquipment[eqId].d) {
-                        lastServiceByEquipment[eqId] = { d, status: estado };
+                        lastServiceByEquipment[eqId] = { d, status: estado, _id: s._id };
                     }
                 }
 
@@ -3190,7 +3191,7 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
                 const eqName = (s.EQUIPO || '').trim().toUpperCase();
                 if (eqName) {
                     if (!lastServiceByEquipName[eqName] || d > lastServiceByEquipName[eqName].d) {
-                        lastServiceByEquipName[eqName] = { d, status: estado };
+                        lastServiceByEquipName[eqName] = { d, status: estado, _id: s._id };
                     }
                 }
 
@@ -3258,12 +3259,18 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
                 const matchTipo    = tipoSel.length   === 0 || tipoSel.some(v   => v.trim().toUpperCase() === svcTipo);
                 const matchEquipo  = equipoSel.length === 0 || equipoSel.some(v  => v.trim().toUpperCase() === svcEquipo);
 
-                // Filtro por estado: compara el ESTADO registrado en esta visita específica.
-                // NO OPERATIVO → solo visitas donde el equipo fue declarado NO OPERATIVO en ese servicio.
+                // Filtro por estado: muestra solo el último servicio del equipo si coincide con el estado filtrado
                 let matchEstado = true;
                 if (dashboardFilters.estado) {
                     const filterEstado = dashboardFilters.estado.replace(/-/g, ' ').toUpperCase().trim();
-                    matchEstado = (service.ESTADO || '').trim().toUpperCase() === filterEstado;
+                    const eqId = String(service.ID_EQUIPO || '').trim().toUpperCase();
+                    const eqName = (service.EQUIPO || '').trim().toUpperCase();
+                    
+                    const lastServById = eqId ? lastServiceByEquipment[eqId] : null;
+                    const lastServByName = eqName ? lastServiceByEquipName[eqName] : null;
+                    const lastServ = lastServById || lastServByName;
+                    
+                    matchEstado = lastServ && lastServ._id === service._id && lastServ.status === filterEstado;
                 }
 
                 let matchMarca = true;
@@ -3481,17 +3488,7 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
             document.getElementById('kpi-equipos-serviciados-mes').innerText = `${equiposUnicosMes} Equipos`;
             document.getElementById('kpi-equipos-serviciados-mes-sub').innerText = `Equipos únicos en ${periodo.monthName}`;
 
-            // 2. Número de equipos operativos o en otras condiciones (calculado de forma consistente de la hoja de servicios filtrados)
-            const lastServiceByEquipment = {};
-            filteredServices.forEach(s => {
-                if (!s.FECHA || !s.ID_EQUIPO) return;
-                const eqId = String(s.ID_EQUIPO).trim().toUpperCase();
-                const d = parseServiceDate(s.FECHA);
-                if (!lastServiceByEquipment[eqId] || d > lastServiceByEquipment[eqId].d) {
-                    lastServiceByEquipment[eqId] = { d, status: (s.ESTADO || '').trim().toUpperCase(), isOperativo: s.OPERATIVO };
-                }
-            });
-
+            // 2. Número de equipos operativos o en otras condiciones
             const totalEquipos = filteredData.length;
 
             let countOperativos = 0;
@@ -3502,7 +3499,12 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
 
             filteredData.forEach(e => {
                 const eqId = String(e.ID_EQUIPO).trim().toUpperCase();
-                const lastServ = lastServiceByEquipment[eqId];
+                const itemNombre = (e.NOMBRE_EQUIPO || '').trim().toUpperCase();
+                
+                const lastServById = lastServiceByEquipment[eqId];
+                const lastServByName = lastServiceByEquipName[itemNombre];
+                const lastServ = lastServById || lastServByName;
+                
                 if (!lastServ) {
                     countSinRegistro++;
                     return;
