@@ -3241,12 +3241,14 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
                 const matchTipo = tipoSel.length === 0 || tipoSel.some(v => v.trim().toUpperCase() === svcTipo);
                 const matchEquipo = equipoSel.length === 0 || equipoSel.some(v => v.trim().toUpperCase() === svcEquipo);
 
-                // Filtro por estado operativo dinámico
+                // Filtro por estado: usa el Último servicio del equipo (no el estado individual de cada fila)
                 let matchEstado = true;
                 if (dashboardFilters.estado) {
-                    // Normalizar el valor del filtro: 'no-operativo' o 'NO OPERATIVO' -> 'NO OPERATIVO'
                     const filterEstado = dashboardFilters.estado.replace(/-/g, ' ').toUpperCase().trim();
-                    matchEstado = (service.ESTADO || '').trim().toUpperCase() === filterEstado;
+                    const eqId = String(service.ID_EQUIPO || '').trim().toUpperCase();
+                    const lastServ = lastServiceByEquipment[eqId];
+                    const lastStatus = lastServ ? lastServ.status : '';
+                    matchEstado = lastStatus === filterEstado;
                 }
 
                 let matchMarca = true;
@@ -3653,13 +3655,26 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
 
             const visibles = ordenados.slice(0, servicesVisibleCount);
 
+            // Mapa del _id del último servicio por equipo (para pintar el punto rojo solo en esa fila)
+            const lastServiceIdPerEquipo = {};
+            columnFilteredServices.forEach(s => {
+                const eqId = String(s.ID_EQUIPO || '').trim().toUpperCase();
+                if (!eqId) return;
+                const d = parseServiceDate(s.FECHA);
+                if (!lastServiceIdPerEquipo[eqId] || d > lastServiceIdPerEquipo[eqId].d) {
+                    lastServiceIdPerEquipo[eqId] = { _id: s._id, d };
+                }
+            });
+
             const esc = (t) => String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
             visibles.forEach(item => {
                 const tr = document.createElement('tr');
                 tr.className = "hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors";
 
-                const isCritical = item.OPERATIVO === false;
+                const eqId = String(item.ID_EQUIPO || '').trim().toUpperCase();
+                const isLastService = eqId && lastServiceIdPerEquipo[eqId] && lastServiceIdPerEquipo[eqId]._id === item._id;
+                const isCritical = isLastService && item.OPERATIVO === false;
 
                 const alertIndicator = isCritical ? `<span class="inline-block w-2.5 h-2.5 rounded-full bg-rose-500 mr-2 animate-ping flex-shrink-0" title="Equipo No Operativo"></span>` : '';
                 const visitaBadge = item.TIPO_VISITA ? `<span class="ml-2 inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-500">${esc(item.TIPO_VISITA)}</span>` : '';
