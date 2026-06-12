@@ -3229,13 +3229,6 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
                 return matchTipo && matchNombre && matchMarca && matchUbi && matchEmpresa && matchEstado && matchFecha;
             });
 
-            // Conjuntos de IDs y nombres de equipos que pasaron todos los filtros en filteredData
-            // (empresa + tipo + equipo + estado + fecha). Se usan para sincronizar la bitácora
-            // con el inventario: si un filtro de estado está activo, solo aparecen servicios de
-            // los equipos que están en filteredData.
-            const filteredEqIds   = new Set(filteredData.map(e => String(e.ID_EQUIPO    || '').trim().toUpperCase()).filter(Boolean));
-            const filteredEqNames = new Set(filteredData.map(e => (e.NOMBRE_EQUIPO || '').trim().toUpperCase()).filter(Boolean));
-
             filteredServices = currentServices.filter(service => {
                 // Regla: si el servicio no tiene fecha, no se muestra
                 if (!service.FECHA) return false;
@@ -3248,18 +3241,12 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
                 const matchTipo    = tipoSel.length   === 0 || tipoSel.some(v   => v.trim().toUpperCase() === svcTipo);
                 const matchEquipo  = equipoSel.length === 0 || equipoSel.some(v  => v.trim().toUpperCase() === svcEquipo);
 
-                // Filtro por estado: cruzar con filteredData, que ya filtra empresa+estado+tipo correctamente.
-                // Así la bitácora siempre es consistente con el conteo de KPIs.
+                // Filtro por estado: compara el ESTADO registrado en esta visita específica.
+                // NO OPERATIVO → solo visitas donde el equipo fue declarado NO OPERATIVO en ese servicio.
                 let matchEstado = true;
                 if (dashboardFilters.estado) {
-                    const eqId = String(service.ID_EQUIPO || '').trim().toUpperCase();
-                    if (eqId) {
-                        matchEstado = filteredEqIds.has(eqId);
-                    } else if (svcEquipo) {
-                        matchEstado = filteredEqNames.has(svcEquipo);
-                    } else {
-                        matchEstado = false; // No se puede identificar el equipo → excluir
-                    }
+                    const filterEstado = dashboardFilters.estado.replace(/-/g, ' ').toUpperCase().trim();
+                    matchEstado = (service.ESTADO || '').trim().toUpperCase() === filterEstado;
                 }
 
                 let matchMarca = true;
