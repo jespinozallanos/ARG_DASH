@@ -3229,24 +3229,48 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
                 return matchTipo && matchNombre && matchMarca && matchUbi && matchEmpresa && matchEstado && matchFecha;
             });
 
+            // Mapa de ÚLTIMO estado por equipo considerando SÓLO los filtros activos de empresa/tipo/equipo
+            // Esto hace que empresa + estado "No Operativo" muestre solo equipos de ESA empresa en ese estado.
+            const lastServiceByEquipoFiltrado = {};
+            currentServices.forEach(s => {
+                if (!s.FECHA || !s.ID_EQUIPO) return;
+                const sEmp  = (s.EMPRESA     || '').trim().toUpperCase();
+                const sTipo = (s.TIPO_EQUIPO || '').trim().toUpperCase();
+                const sEq   = (s.EQUIPO      || '').trim().toUpperCase();
+                // Respetar filtros activos de empresa / tipo / equipo
+                if (empresaSel.length > 0 && !empresaSel.some(v => v.trim().toUpperCase() === sEmp))  return;
+                if (tipoSel.length   > 0 && !tipoSel.some(v   => v.trim().toUpperCase() === sTipo)) return;
+                if (equipoSel.length > 0 && !equipoSel.some(v  => v.trim().toUpperCase() === sEq))   return;
+                // Respetar fecha fin si hay
+                const d = parseServiceDate(s.FECHA);
+                if (dashboardFilters.fechaFin) {
+                    const endDate = new Date(dashboardFilters.fechaFin + "T23:59:59");
+                    if (d > endDate) return;
+                }
+                const eqId = String(s.ID_EQUIPO).trim().toUpperCase();
+                if (!lastServiceByEquipoFiltrado[eqId] || d > lastServiceByEquipoFiltrado[eqId].d) {
+                    lastServiceByEquipoFiltrado[eqId] = { d, status: (s.ESTADO || '').trim().toUpperCase() };
+                }
+            });
+
             filteredServices = currentServices.filter(service => {
                 // Regla: si el servicio no tiene fecha, no se muestra
                 if (!service.FECHA) return false;
 
-                const svcEmpresa = (service.EMPRESA || '').trim().toUpperCase();
-                const svcTipo = (service.TIPO_EQUIPO || '').trim().toUpperCase();
-                const svcEquipo = (service.EQUIPO || '').trim().toUpperCase();
+                const svcEmpresa = (service.EMPRESA     || '').trim().toUpperCase();
+                const svcTipo   = (service.TIPO_EQUIPO  || '').trim().toUpperCase();
+                const svcEquipo = (service.EQUIPO        || '').trim().toUpperCase();
 
                 const matchEmpresa = empresaSel.length === 0 || empresaSel.some(v => v.trim().toUpperCase() === svcEmpresa);
-                const matchTipo = tipoSel.length === 0 || tipoSel.some(v => v.trim().toUpperCase() === svcTipo);
-                const matchEquipo = equipoSel.length === 0 || equipoSel.some(v => v.trim().toUpperCase() === svcEquipo);
+                const matchTipo    = tipoSel.length   === 0 || tipoSel.some(v   => v.trim().toUpperCase() === svcTipo);
+                const matchEquipo  = equipoSel.length === 0 || equipoSel.some(v  => v.trim().toUpperCase() === svcEquipo);
 
-                // Filtro por estado: usa el Último servicio del equipo (no el estado individual de cada fila)
+                // Filtro por estado: usa el último servicio del equipo dentro del contexto de los filtros activos
                 let matchEstado = true;
                 if (dashboardFilters.estado) {
                     const filterEstado = dashboardFilters.estado.replace(/-/g, ' ').toUpperCase().trim();
                     const eqId = String(service.ID_EQUIPO || '').trim().toUpperCase();
-                    const lastServ = lastServiceByEquipment[eqId];
+                    const lastServ = lastServiceByEquipoFiltrado[eqId];
                     const lastStatus = lastServ ? lastServ.status : '';
                     matchEstado = lastStatus === filterEstado;
                 }
