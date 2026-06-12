@@ -3229,29 +3229,12 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
                 return matchTipo && matchNombre && matchMarca && matchUbi && matchEmpresa && matchEstado && matchFecha;
             });
 
-            // Mapa de ÚLTIMO estado por equipo considerando SÓLO los filtros activos de empresa/tipo/equipo
-            // Esto hace que empresa + estado "No Operativo" muestre solo equipos de ESA empresa en ese estado.
-            const lastServiceByEquipoFiltrado = {};
-            currentServices.forEach(s => {
-                if (!s.FECHA || !s.ID_EQUIPO) return;
-                const sEmp  = (s.EMPRESA     || '').trim().toUpperCase();
-                const sTipo = (s.TIPO_EQUIPO || '').trim().toUpperCase();
-                const sEq   = (s.EQUIPO      || '').trim().toUpperCase();
-                // Respetar filtros activos de empresa / tipo / equipo
-                if (empresaSel.length > 0 && !empresaSel.some(v => v.trim().toUpperCase() === sEmp))  return;
-                if (tipoSel.length   > 0 && !tipoSel.some(v   => v.trim().toUpperCase() === sTipo)) return;
-                if (equipoSel.length > 0 && !equipoSel.some(v  => v.trim().toUpperCase() === sEq))   return;
-                // Respetar fecha fin si hay
-                const d = parseServiceDate(s.FECHA);
-                if (dashboardFilters.fechaFin) {
-                    const endDate = new Date(dashboardFilters.fechaFin + "T23:59:59");
-                    if (d > endDate) return;
-                }
-                const eqId = String(s.ID_EQUIPO).trim().toUpperCase();
-                if (!lastServiceByEquipoFiltrado[eqId] || d > lastServiceByEquipoFiltrado[eqId].d) {
-                    lastServiceByEquipoFiltrado[eqId] = { d, status: (s.ESTADO || '').trim().toUpperCase() };
-                }
-            });
+            // Conjuntos de IDs y nombres de equipos que pasaron todos los filtros en filteredData
+            // (empresa + tipo + equipo + estado + fecha). Se usan para sincronizar la bitácora
+            // con el inventario: si un filtro de estado está activo, solo aparecen servicios de
+            // los equipos que están en filteredData.
+            const filteredEqIds   = new Set(filteredData.map(e => String(e.ID_EQUIPO    || '').trim().toUpperCase()).filter(Boolean));
+            const filteredEqNames = new Set(filteredData.map(e => (e.NOMBRE_EQUIPO || '').trim().toUpperCase()).filter(Boolean));
 
             filteredServices = currentServices.filter(service => {
                 // Regla: si el servicio no tiene fecha, no se muestra
@@ -3265,14 +3248,18 @@ d3e22c33,7,EQUIPOS DE FRIO,1011,MANTENEDOR 1 (CUATRO PUERTAS),S/M,,,,EQUIPOS_Ima
                 const matchTipo    = tipoSel.length   === 0 || tipoSel.some(v   => v.trim().toUpperCase() === svcTipo);
                 const matchEquipo  = equipoSel.length === 0 || equipoSel.some(v  => v.trim().toUpperCase() === svcEquipo);
 
-                // Filtro por estado: usa el último servicio del equipo dentro del contexto de los filtros activos
+                // Filtro por estado: cruzar con filteredData, que ya filtra empresa+estado+tipo correctamente.
+                // Así la bitácora siempre es consistente con el conteo de KPIs.
                 let matchEstado = true;
                 if (dashboardFilters.estado) {
-                    const filterEstado = dashboardFilters.estado.replace(/-/g, ' ').toUpperCase().trim();
                     const eqId = String(service.ID_EQUIPO || '').trim().toUpperCase();
-                    const lastServ = lastServiceByEquipoFiltrado[eqId];
-                    const lastStatus = lastServ ? lastServ.status : '';
-                    matchEstado = lastStatus === filterEstado;
+                    if (eqId) {
+                        matchEstado = filteredEqIds.has(eqId);
+                    } else if (svcEquipo) {
+                        matchEstado = filteredEqNames.has(svcEquipo);
+                    } else {
+                        matchEstado = false; // No se puede identificar el equipo → excluir
+                    }
                 }
 
                 let matchMarca = true;
